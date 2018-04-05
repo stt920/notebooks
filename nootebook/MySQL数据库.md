@@ -1,5 +1,9 @@
 ### 数据库基础
 
+##### 主键外键
+
+外键为某个表中的一列，它包含另一个表的主键，定义了两个表的关系。
+
 #### SQL语句
 
 SQL是结构化查询语句（Structured Query Language）的缩写，其功能包括数据查询（DQL）、数据定义（DDL）、数据操作（DML）和数据控制（DCL）4个部分。
@@ -18,7 +22,7 @@ SHOW TABLES;#显示所选择数据库表
 SHOW COLUMNS FROM table;#显示表设计信息
 ```
 
-##### 索引数据
+##### 检索数据
 
 ```mysql
 SELECT pro_name FROM products;#查找单个列
@@ -51,7 +55,6 @@ SELECT prod_name,prod_price FROM products WHERE prod_price=2.5;#操作符：=、
 SELECT prod_id,prod_name,prod_price FROM products WHERE vend_id==1003 AND prod_price<=10;#组合WHERE; AND、OR
 
 SELECT prod_name,prod_price FROM products WHERE vend_id IN (1002,1003) ORDER BY prod_name;#指定条件范围检索；NOT IN
-
 ```
 
 ##### 通配符过滤
@@ -62,6 +65,110 @@ SELECT prod_name,prod_price FROM products WHERE prod_name LIKE 'jie%';
 #'_':匹配单个任意字符
 
 REGEXP 正则表达式匹配
+```
+
+##### 创建计算字段
+
+```mysql
+SELECT Concat(vend_name,'(',vend_country,')') FROM vendors ORDER BY vend_name;#拼接字段
+SELECT Concat(RTrim(vend_name）,'(',RTrim（vend_country）,')') AS vend_title FROM vendors ORDER BY vend_name;#拼接字段,使用别名
+SELECT pro_id,quantity,item_price, quantity*item_price AS expended_price FROM orderitems WHERE order_num=2005;#执行算数计算
+```
+
+##### 组合查询
+
+可用UNION操作符来组合数条SQL查询。利用UNION可给出多条SELECT语句，将它们的结果组合成单个结果集。
+
+```mysql
+SELECT vend_id,prod_id,prod_price FROM products WHERE prod_price<=5 UNION SELECT vend_id,prod_id,prod_price FROM products WHERE vend_id IN (1001,1002);
+```
+
+##### 插入数据
+
+插入一行数据：
+
+```mysql
+INSERT INTO coustomers（cust_name,
+	cust_address,
+	cust_city,
+	cust_state.
+	cust_zip,
+	cust_country,
+	cust_contact)
+  VALUES('Pep E.LaPew',
+        '100 main street',
+        'Los Angeles',
+        'CA',
+        '90046',
+        'USA',
+        NULL);
+```
+
+插入多行数据：
+
+```mysql
+INSERT INTO coustomers（cust_name,
+	cust_address,
+	cust_city,
+	cust_state.
+	cust_zip,
+	cust_country,
+	cust_contact)
+  VALUES('Pep E.LaPew',
+        '100 main street',
+        'Los Angeles',
+        'CA',
+        '90046',
+        'USA',
+        NULL)，#逗号隔开
+ 		('Pep E.LaPew',
+        '100 main street',
+        'Los Angeles',
+        'CA',
+        '90046',
+        'USA',
+        NULL);
+```
+
+插入检索出的数据
+
+```mysql
+INSERT INTO coustomers（cust_name,
+	cust_address,
+	cust_city,
+	cust_state.
+	cust_zip,
+	cust_country,
+	cust_contact)
+   SELECT cust_name,
+	cust_address,
+	cust_city,
+	cust_state.
+	cust_zip,
+	cust_country,
+	cust_contact
+   FROM custnew；
+```
+
+##### 更新与删除
+
+```mysql
+#更新
+UPDATE customers
+SET cust_name='The Fudds',
+	cust_email='12345@123.com'
+WHERE cust_id=1005;
+
+#删除
+DELETE FROM customers WHERE cust_id=1006;#省略WHERE子句则删除整个表的内容，但不删除表
+
+#DELETE不需要列名或通配符。DELETE删除整行而不是删除列。为了删除列，使用UPDATE语句
+UPDATE customers SET cust_email=NULL WHERE cust_id=1005;#其中NULL用来删除cust_email列中所有值
+
+#更快的删除，删除表中数据，不删除表
+TRUNCATE TABLE#速度比delete更快
+
+
 ```
 
 
@@ -495,7 +602,7 @@ drop view v_student;
 日志文件记录所有对数据库数据的修改，主要是保护数据库防止故障，以及恢复数据时使用。特点如下：
 
    	1. 每一个数据库至少包含两个日志文件组。每个日志文件组至少包含两个日志文件成员。
- 	2. 日志文件组以循环方式进行写操作。
+		2. 日志文件组以循环方式进行写操作。
 3. 每一个日志文件对应一个物理文件。
 
 通过日志文件来记录数据库事物可以最大限度保证数据库的一致性与安全性，但一旦数据库中日志满了，就只能执行查询等操作，不能执行更改、备份等操作。其原因是任何写操作都要记录日志，也就是说基本上处于不能使用的状态。
