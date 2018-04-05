@@ -236,7 +236,7 @@ int main
 }
 ```
 
-#####[static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
+##### [static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
 
 **c语言中static的用法：**
 
@@ -303,19 +303,19 @@ class A{
 
 　　warning：不要再头文件中声明static的全局函数，不要在cpp内声明非static的全局函数，如果你要在多个cpp中复用该函数，就把它的声明提到头文件里去，否则cpp内部声明需加上static修饰；
 
-#####volatile关键字
+##### volatile关键字
 
 - volatile定义变量的值是易变的，每次用到这个变量的值的时候都要去重新读取这个变量的值，而不是读寄存器内的备份。
 - 多线程中被几个任务共享的变量需要定义为volatile类型。
 
 #####[auto和decltype](https://www.cnblogs.com/XiangfeiAi/p/4451904.html)
 
-#####struct和class
+##### struct和class
 
 - C的struct与C++的class的区别：struct只是作为一种复杂数据类型定义，不能用于面向对象编程。 
 - C++中的struct和class的区别：对于成员访问权限以及继承方式，class中默认的是private的，而struct中则是public的。class还可以用于表示模板类型，struct则不行。
 
-#####new/delete和malloc/free
+##### new/delete和malloc/free
 
  [new/delete实现]( http://blog.csdn.net/passion_wu128/article/details/38966581)
 
@@ -360,7 +360,7 @@ class A{
       define – 不分配内存，给出的是立即数，有多少次使用就进行多少次替换，在内存中会有多个拷贝，消耗内存大 
       const – 在静态存储区中分配空间，在程序运行过程中内存中只有一个拷贝
 
-#####explicit
+##### explicit
 
 ​	被修饰的构造函数类不能发生相应的隐式类型转换，只能以显示的方式进行类型转换。类构造函数默认情况下声明为隐式的，即implicit。
 
@@ -461,13 +461,13 @@ C++的四种强制类型转换为：`static_cast、const_cast、reinterpret_cast
 
 ##### 计算类的大小
 
-##虚函数相关
+## 虚函数相关
 
-#####虚函数
+##### 虚函数
 
-#####纯虚函数
+##### 纯虚函数
 
-#####析构函数为虚
+##### 析构函数为虚
 
 ```c++
 #include <iostream.h>
@@ -506,9 +506,9 @@ void main()
 
 2.多态的时候一定要将析构函数写成虚函数，防止内存泄露，各个子类维护自己内部数据释放。
 
-##STL相关
+## STL相关
 
-#####[迭代器失效问题](https://www.cnblogs.com/qiaoconglovelife/p/5370396.html)
+##### [迭代器失效问题](https://www.cnblogs.com/qiaoconglovelife/p/5370396.html)
 
 c++ primer（315）
 
@@ -532,7 +532,7 @@ c++ primer（315）
 
   注意：当我们删除元素时，尾后迭代器总会失效。
 
-#####vector与list
+##### vector与list
 
 ​	1.vector数据结构
 ​		vector和数组类似，拥有一段连续的内存空间，并且起始地址不变。
@@ -552,7 +552,7 @@ c++ primer（315）
 3. 总之，如果需要高效的随机存取，而不在乎插入和删除的效率，使用vector;
    如果需要大量的插入和删除，而不关心随机存取，则应使用list。
 
-#####map与unordered_map
+##### map与unordered_map
 
 - map： map内部实现了一个**红黑树**，该结构具有自动排序的功能，因此map内部的所有元素都是**有序的**，红黑树的每一个节点都代表着map的一个元素，因此，对于map进行的查找，删除，添加等一系列的操作都相当于是对红黑树进行这样的操作，故红黑树的效率决定了map的效率。
 - unordered_map: unordered_map内部实现了一个**哈希表**，因此其元素的排列顺序是杂乱的，**无序的**
@@ -569,6 +569,6 @@ c++ primer（315）
 
 为什么使用红黑树实现
 
-#####vector实现
+##### vector实现
 
-#####hash表实现 
+##### hash表实现 
