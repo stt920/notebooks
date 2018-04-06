@@ -215,9 +215,9 @@ DROP TABLE coustomers；
 RENAME TABLE customers2 TO customers;
 ```
 
+#### 数据库引擎
 
-
-#### MyISAM与InnoDB
+##### MyISAM与InnoDB
 
 **1.区别**
 
@@ -591,7 +591,7 @@ NULL占空间
 6. 存储过程在创建时即在服务器上进行编译，执行速度更快。
 ```
 
-#### 
+ 
 
 #### 视图
 

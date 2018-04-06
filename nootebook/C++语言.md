@@ -424,11 +424,23 @@ C++的四种强制类型转换为：`static_cast、const_cast、reinterpret_cast
 
 1. shared_ptr, unique_ptr, weak_ptr的区别？auto_ptr与shared_ptr的区别？weak_ptr主要是为了解决什么问题的？shared_ptr的内部实现？
 
-##### map、hashmap、hashtable底层结构
+##### hashmap、hashtable
 
-**map**
+​	总体来说，hash_map 查找速度会比map快，而且查找速度基本和数据量大小无关，属于常数级别;而map的查找速度是log(n)级别。hash还有hash函数的耗时。当有100w条记录的时候，map也只需要20次的比较，200w也只需要21次的比较！所以并不一定常数就比log(n) 小！
 
+​    hash_map对空间的要求要比map高很多，所以是以空间换时间的方法，而且，hash_map如果hash函数和hash因子选择不好的话，也许不会达到你要的效果，所以至于用map，还是hash_map，从3个方面来权衡：查找速度, 数据量, 内存使用。
 
+> java中hashmap与hashtable区别
+>
+> 1、HashMap是非线程安全的，HashTable是线程安全的。 
+>
+> 2、HashMap的键和值都允许有null值存在，而HashTable则不行。 
+>
+> 3、因为线程安全的问题，HashMap效率比HashTable的要高。 
+>
+> 4、Hashtable是同步的，而HashMap不是。因此，HashMap更适合于单线程环境，而Hashtable适合于多线程环境。
+>
+> ​      一般现在**不建议用HashTable**,  ①是HashTable是遗留类，内部实现很多没优化和冗余。②即使在**多线程**环境下，现在也有同步的**ConcurrentHashMap**替代，没有必要因为是多线程而用HashTable。
 
 ##### C++11新特性
 
@@ -567,8 +579,16 @@ c++ primer（315）
 4. 每个红色节点的两个子节点都是黑色。(从每个叶子到根的所有路径上不能有两个连续的红色节点)
 5. 从每个叶子到根的所有路径都包含相同数目的黑色节点
 
-为什么使用红黑树实现
+这些约束的好处是：保持了树的相对平衡，同时又比AVL的插入删除操作的复杂性要低许多。
+
+为什么使用红黑树实现？
+
+​	map,set底层都提供了排序功能，且查找速度快。红黑树实际上是AVL的一种变形，但是其比AVL(平衡二叉搜索树)具有更高的插入效率，当然查找效率会平衡二叉树稍微低一点点，毕竟平衡二叉树太完美了。但是这种查找效率的损失是非常值得的。它的操作有着良好的最坏情况运行时间，并且在实践中是高效的: 它可以在O(log *n*)时间内做查找，插入和删除，这里的*n*是树中元素的数目。
 
 ##### vector实现
 
 ##### hash表实现 
+
+## 其他
+
+##### 遇到coredump要怎么调试
