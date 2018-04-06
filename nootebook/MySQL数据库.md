@@ -168,7 +168,51 @@ UPDATE customers SET cust_email=NULL WHERE cust_id=1005;#其中NULL用来删除c
 #更快的删除，删除表中数据，不删除表
 TRUNCATE TABLE#速度比delete更快
 
+```
 
+##### 创建和操纵表
+
+```mysql
+#创建表
+CREAT TABLE customers
+（
+	cust_id		  int 	   NOT NULL	 AUTO_INCREMENT,
+	cust_name	  char(50) NOT NULL,
+	cust_address  char(50)  NULL,
+	cust_city     char(50)  NULL,
+	cust_state    char(5)   NULL,
+	PRIMARY KEY (cust_id)
+）ENGINE=InnoDB;
+#AUTO_INCREMENT 值自动增加
+```
+
+```mysql
+#DEFAULT 指定默认值
+CREAT TABLE customers
+（
+	cust_id		  int 	   NOT NULL	 AUTO_INCREMENT,
+	cust_name	  char(50) NOT NULL,
+	cust_address  char(50)  NULL	DEFAULT china,
+	cust_city     char(50)  NULL,
+	cust_state    char(5)   NULL,
+	PRIMARY KEY (cust_id)
+）ENGINE=InnoDB;
+```
+
+```mysql
+#更新表
+ALTER TABLE vendors ADD vend_phone CHAR(20);#添加列
+ALTER TABLE vendors DROP COLUMN vend_phone;#删除列
+```
+
+```mysql
+#删除表
+DROP TABLE coustomers；
+```
+
+```mysql
+#重命名表
+RENAME TABLE customers2 TO customers;
 ```
 
 
@@ -210,11 +254,15 @@ INNODB在做SELECT的时候，要维护的东西比MYISAM引擎多很多；
 
 MVCC ( Multi-Version Concurrency Control )多版本并发控制 
 
-**3. 应用场景MyISAM适合：**
+**3. 应用场景**
+
+**MyISAM适合：**
 
 (1)做很多count 的计算；(2)插入不频繁，查询非常频繁；(3)没有事务。
 
-InnoDB适合：(1)可靠性要求比较高，或者要求事务；(2)表更新和查询都相当的频繁，并且行锁定的机会比较大的情况。
+**InnoDB适合：**
+
+(1)可靠性要求比较高，或者要求事务；(2)表更新和查询都相当的频繁，并且行锁定的机会比较大的情况。
 
 #### 索引
 
