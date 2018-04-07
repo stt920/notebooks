@@ -1,3 +1,5 @@
+[TOC]
+
 ## Linux shell
 
 #### VIM命令
@@ -12,32 +14,32 @@ grep命令常见用法
 
 在文件中搜索一个单词，命令会返回一个包含**“match_pattern”**的文本行：
 
-```
+```shell
 grep match_pattern file_name
 grep "match_pattern" file_name
 ```
 
 在多个文件中查找：
 
-```
+```shell
 grep "match_pattern" file_1 file_2 file_3 ...
 ```
 
 输出除之外的所有行 **-v **选项：
 
-```
+```shell
 grep -v "match_pattern" file_name
 ```
 
 标记匹配颜色 **--color=auto** 选项：
 
-```
+```shell
 grep "match_pattern" file_name --color=auto
 ```
 
 使用正则表达式 **-E** 选项：
 
-```
+```shell
 grep -E "[1-9]+"
 或
 egrep "[1-9]+"
@@ -45,7 +47,7 @@ egrep "[1-9]+"
 
 只输出文件中匹配到的部分 **-o **选项：
 
-```
+```shell
 echo this is a test line. | grep -o -E "[a-z]+\."
 line.
 
@@ -55,13 +57,13 @@ line.
 
 统计文件或者文本中包含匹配字符串的行数 **-c** 选项：
 
-```
+```shell
 grep -c "text" file_name
 ```
 
 输出包含匹配字符串的行数 **-n **选项：
 
-```
+```shell
 grep "text" -n file_name
 或
 cat file_name | grep "text" -n
@@ -72,7 +74,7 @@ grep "text" -n file_1 file_2
 
 打印样式匹配所位于的字符或字节偏移：
 
-```
+```shell
 echo gun is not unix | grep -b -o "not"
 7:not
 
@@ -81,7 +83,7 @@ echo gun is not unix | grep -b -o "not"
 
 搜索多个文件并查找匹配文本在哪些文件中：
 
-```
+```shell
 grep -l "text" file1 file2 file3...
 ```
 
@@ -89,21 +91,21 @@ grep递归搜索文件
 
 在多级目录中对文本进行递归搜索：
 
-```
+```shell
 grep "text" . -r -n
 # .表示当前目录。
 ```
 
 忽略匹配样式中的字符大小写：
 
-```
+```shell
 echo "hello world" | grep -i "HELLO"
 hello
 ```
 
 选项** -e** 制动多个匹配样式：
 
-```
+```shell
 echo this is a text line | grep -e "is" -e "line" -o
 is
 line
@@ -118,7 +120,7 @@ echo aaa bbb ccc ddd eee | grep -f patfile -o
 
 在grep搜索结果中包括或者排除指定文件：
 
-```
+```shell
 #只在目录中所有的.php和.html文件中递归搜索字符"main()"
 grep "main()" . -r --include *.{php,html}
 
@@ -131,7 +133,7 @@ grep "main()" . -r --exclude-from filelist
 
 使用0值字节后缀的grep与[xargs](http://man.linuxde.net/xargs)：
 
-```
+```shell
 #测试文件：
 echo "aaa" > file1
 echo "bbb" > file2
@@ -144,7 +146,7 @@ grep "aaa" file* -lZ | xargs -0 rm
 
 grep静默输出：
 
-```
+```shell
 grep -q "test" filename
 
 #不会输出任何信息，如果命令运行成功返回0，失败则返回非0值。一般用于条件测试。
@@ -152,7 +154,7 @@ grep -q "test" filename
 
 打印出匹配文本之前或者之后的行：
 
-```
+```shell
 #显示匹配某个结果之后的3行，使用 -A 选项：
 seq 10 | grep "5" -A 3
 5
