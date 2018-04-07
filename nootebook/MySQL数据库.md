@@ -215,15 +215,25 @@ DROP TABLE coustomers；
 RENAME TABLE customers2 TO customers;
 ```
 
+##### 视图
+
+```mysql
+CREATE VIEW productcustomers AS SELECT cust_name,cust_contact,prod_id FROM customers,orders,orderitems WHERE customers.cust_id=orders.cust_id;
+```
+
+
+
 #### 数据库引擎
 
 ##### MyISAM与InnoDB
 
 **1.区别**
 
+MySQL默认是MyISAM;
+
 **（1）事务处理：**
 
-MyISAM是非事务安全型的，而InnoDB是事务安全型的（支持事务处理等高级处理）；
+MyISAM不支持事物处理，InnoDB支持事务处理；
 
 **（2）锁机制不同：**
 
@@ -567,15 +577,15 @@ NULL占空间
 
 ​	SQL语句执行的时候要先编译，然后被执行。在大型数据库中，为了提高效率，将为了完成特定功能的SQL语句集进行编译优化后，存储在数据库服务器中，用户通过特定存储过程的名字来调用执行。
 
-```sql
-	创建存储过程常用语法如下：
+```MYSQL
+	#创建存储过程常用语法如下：
 		creat procedure sp_name @[参数名][类型]
 								as
 								begin
 								……
 								end
-    调用存储过程语法：exec sp_name[参数名]
-    删除存储过程语法：drop procedure sp_name
+    #调用存储过程语法：CALL sp_name[参数名]
+   # 删除存储过程语法：drop procedure sp_name
 ```
 
 ​	使用存储过程可以增强SQL语言的功能和灵活性，由于可以用流程控制语句编写存储过程，有很强的灵活性，所以可以完成复杂的判断和运算，并且可以保证数据的安全性和完整性，同时存储过程可以使没有权限的用户在控制之下间接地存取数据库，保证了数据的安全。
