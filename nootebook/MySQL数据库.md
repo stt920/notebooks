@@ -1,8 +1,56 @@
 ## 数据库基础
 
+#### 基本概念
+
 ##### 主键外键
 
 外键为某个表中的一列，它包含另一个表的主键，定义了两个表的关系。
+
+##### 数据类型
+
+1. 整型
+
+   TINYINT, SMALLINT, MEDIUMINT, INT, BIGINT 分别使用 8, 16, 24, 32, 64 位存储空间，一般情况下越小的列越好。
+
+   INT(11) 中的数字只是规定了交互工具显示字符的个数，对于存储和计算来说是没有意义的。
+
+2. 浮点型
+
+   FLOAT 和 DOUBLE 为浮点类型，DECIMAL 为高精度小数类型。CPU 原生支持浮点运算，但是不支持 DECIMAl 类型的计算，因此 DECIMAL 的计算比浮点类型需要更高的代价。
+
+   FLOAT、DOUBLE 和 DECIMAL 都可以指定列宽，例如 DECIMAL(18, 9) 表示总共 18 位，取 9 位存储小数部分，剩下 9 位存储整数部分。
+
+3. 字符串
+
+   主要有 CHAR 和 VARCHAR 两种类型，一种是定长的，一种是变长的。
+
+   VARCHAR 这种变长类型能够节省空间，因为只需要存储必要的内容。但是在执行 UPDATE 时可能会使行变得比原来长，当超出一个页所能容纳的大小时，就要执行额外的操作。MyISAM 会将行拆成不同的片段存储，而 InnoDB 则需要分裂页来使行放进页内。
+
+   VARCHAR 会保留字符串末尾的空格，而 CHAR 会删除。
+
+4. 日期和时间
+
+   MySQL 提供了两种相似的日期时间类型：DATATIME 和 TIMESTAMP。
+
+   - **DATATIME**
+
+   能够保存从 1001 年到 9999 年的日期和时间，精度为秒，使用 8 字节的存储空间。
+
+   它与时区无关。
+
+   默认情况下，MySQL 以一种可排序的、无歧义的格式显示 DATATIME 值，例如“2008-01-16 22:37:08”，这是 ANSI 标准定义的日期和时间表示方法。
+
+   - **TIMESTAMP**
+
+   和 UNIX 时间戳相同，保存从 1970 年 1 月 1 日午夜（格林威治时间）以来的秒数，使用 4 个字节，只能表示从 1970 年 到 2038 年。
+
+   它和时区有关。
+
+   MySQL 提供了 FROM_UNIXTIME() 函数把 UNIX 时间戳转换为日期，并提供了 UNIX_TIMESTAMP() 函数把日期转换为 UNIX 时间戳。
+
+   默认情况下，如果插入时没有指定 TIMESTAMP 列的值，会将这个值设置为当前时间。
+
+   应该尽量使用 TIMESTAMP，因为它比 DATETIME 空间效率更高。
 
 #### SQL语句
 
@@ -221,6 +269,44 @@ RENAME TABLE customers2 TO customers;
 CREATE VIEW productcustomers AS SELECT cust_name,cust_contact,prod_id FROM customers,orders,orderitems WHERE customers.cust_id=orders.cust_id;
 ```
 
+##### 内连接与外连接
+
+1.内连接,显示两个表中有联系的所有数据;
+
+2.左链接,以左表为参照,显示所有数据;
+
+3.右链接,以右表为参照显示数据;
+
+- **内连接**
+
+内连接又称等值连接，使用 INNER JOIN 关键字。
+
+```mysql
+select a, b, c
+from A inner join B
+on A.key = B.keymysql
+```
+
+可以不明确使用 INNER JOIN，而使用普通查询并在 WHERE 中将两个表中要连接的列用等值方法连接起来。
+
+```mysql
+select a, b, c
+from A, B
+where A.key = B.key
+```
+
+- **外连接**
+
+外连接保留了没有关联的那些行。分为左外连接，右外连接以及全外连接，左外连接就是保留左表没有关联的行。
+
+检索所有顾客的订单信息，包括还没有订单信息的顾客。
+
+```sql
+select Customers.cust_id, Orders.order_num
+from Customers left outer join Orders
+on Customers.cust_id = Orders.curt_id;
+```
+
 
 
 #### 数据库引擎
@@ -360,7 +446,7 @@ CREATE TABLE `table` (
 
 ​	指多个字段上创建的索引，只有在查询条件中使用了创建索引时的第一个字段，索引才会被使用。使用组合索引时**遵循最左前缀集合**
 
-​	复合索引还有一个优点，它通过被称为“最左前缀”（leftmost prefixing）的概念体现出来的。假设向一个表的多个字段（例如fristname、lastname、address）创建复合索引（索引名为fname_lname_address）.当where查询条件是以下各种字段的组合是，MySQL将使用fname_lname_address索引。其他情况将无法使用fname_lname_address索引。可以理解：一个复合索引（firstname、lastname、address）等效于（firstname，llastname，age）、（firstname，lastname）以及（firstname）三个索引。基于最做前缀原则，应尽量避免创建重复的索引，例如，创建了fname_lname_address索引后，就无需再first_name子段上单独创建一个索引
+​	复合索引还有一个优点，它通过被称为“最左前缀”（leftmost prefixing）的概念体现出来的。假设向一个表的多个字段（例如fristname、lastname、address）创建复合索引（索引名为fname_lname_address）.当where查询条件是以下各种字段的组合是，MySQL将使用fname_lname_address索引。其他情况将无法使用fname_lname_address索引。可以理解：一个复合索引（firstname、lastname、address）等效于（firstname，lastname，address）、（firstname，lastname）以及（firstname）三个索引。基于最做前缀原则，应尽量避免创建重复的索引，例如，创建了fname_lname_address索引后，就无需再first_name子段上单独创建一个索引
 
 ```sql
 ALTER TABLE `table` ADD INDEX name_city_age (name,city,age); 
@@ -494,6 +580,8 @@ NULL占空间
 - 1NF： 字段是最小的的单元不可再分 
 - 2NF：满足1NF,表中的字段必须完全依赖于全部主键而非部分主键 
 - 3NF：满足2NF,非主键外的所有字段必须互不依赖
+- 巴斯-科德范式（BCNF）:在3NF基础上，任何非主属性不能对主键子集依赖（在3NF基础上消除对主码子集的依赖）
+- ​
 
 1. **第一范式**（1NF）：确保每一列的原子性
 
@@ -643,13 +731,7 @@ drop view v_student;
 
    ​	当用户试图修改视图的某些信息时，数据库必须把它转化为对基本表的某些信息的修改，对于简单的视图来说，这是很方便的，但是，对于比较复杂的试图，可能是不可修改的。
 
-#### 内连接与外连接
 
-1.内连接,显示两个表中有联系的所有数据;
-
-2.左链接,以左表为参照,显示所有数据;
-
-3.右链接,以右表为参照显示数据;
 
 #### 触发器
 
