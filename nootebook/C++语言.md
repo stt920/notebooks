@@ -442,6 +442,8 @@ C++的四种强制类型转换为：`static_cast、const_cast、reinterpret_cast
 >
 > ​      一般现在**不建议用HashTable**,  ①是HashTable是遗留类，内部实现很多没优化和冗余。②即使在**多线程**环境下，现在也有同步的**ConcurrentHashMap**替代，没有必要因为是多线程而用HashTable。
 
+##### extern “C”作用
+
 ##### C++11新特性
 
 ##面向对象基础
