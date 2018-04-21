@@ -1,6 +1,6 @@
 # C++基础
 
-## c++语法
+## 程序设计基础
 
 ##### 程序的内存分配
 
@@ -99,6 +99,8 @@ int strlen(const char *str){
 - sizeof参数可以是任何数据的类型或者数据（sizeof参数不退化）；strlen的参数只能是字符指针且结尾是'\0'的字符串。
 - **因为sizeof值在编译时确定，所以不能用来得到动态分配（运行时分配）存储空间的大小。**
 - `strlen("\0")=0;sizeof("\0")=2;`
+
+##### sizeof（结构体、联合体、类）
 
 ##### strcmp
 
@@ -443,6 +445,8 @@ C++的四种强制类型转换为：`static_cast、const_cast、reinterpret_cast
 > ​      一般现在**不建议用HashTable**,  ①是HashTable是遗留类，内部实现很多没优化和冗余。②即使在**多线程**环境下，现在也有同步的**ConcurrentHashMap**替代，没有必要因为是多线程而用HashTable。
 
 ##### extern “C”作用
+
+##### inline内联函数
 
 ##### C++11新特性
 
