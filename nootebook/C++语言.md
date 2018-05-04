@@ -420,49 +420,66 @@ class A{
 
 ## C++相关语法
 
-#### [auto和decltype](https://www.cnblogs.com/XiangfeiAi/p/4451904.html)
+#### 关键字
 
-#### explicit
+##### [auto和decltype](https://www.cnblogs.com/XiangfeiAi/p/4451904.html)
+
+##### explicit
 
 ​	被修饰的构造函数类不能发生相应的隐式类型转换，只能以显示的方式进行类型转换。类构造函数默认情况下声明为隐式的，即implicit。
 
-####[四种强制类型转换](http://blog.csdn.net/u010275850/article/details/49452373)
+####[显式类型转换](http://blog.csdn.net/u010275850/article/details/49452373)
 
-C++的四种强制类型转换为：`static_cast、const_cast、reinterpret_cast和dynamic_cast`
+c++primer（144）
+
+C++的四种显式类型转换为：`static_cast、const_cast、reinterpret_cast和dynamic_cast`
 
 类型转换的一般形式：`cast-name<type>(expression);`
 
 **static_cast**
 
-> 任何具有明确定义的类型转换，只要不包含底层const，都可以使用static_cast；
->
-> 注：
->
-> 顶层const：表示指针本身是个常量。如：int *const p；
->
-> 底层const：表示指针所指的对象是一个常量。如：int const *p；
->
+任何具有明确定义的类型转换，只要不包含底层const，都可以使用static_cast；
+
+```c++
+//强制类型转换以便执行浮点数除法
+double slope=static_cast<double>(j)/i;
+```
+
+```
+注：
+
+顶层const：表示指针本身是个常量。如：int *const p；
+
+底层const：表示指针所指的对象是一个常量。如：int const *p；
+```
 
 **const_cast**
 
-> 该运算符只能改变运算对象的底层const。
->
+该运算符只能改变运算对象的底层const。
+
+```c++
+const char *pc;
+char *p=const_cast<char*>(pc);
+```
 
 **reinterpret_cast**
 
-> 通常为运算对象的位模式提供较低层次上的重新解释。
->
-> 注：
->
-> 1、在指针之间转换，将一个类型的指针转换为另一个类型的指针，无关类型；
->
-> 2、将指针值转换为一个整型数,但不能用于非指针类型的转换。
->
+通常为运算对象的位模式提供较低层次上的重新解释。
+
+```c++
+int *ip;
+char *pc=reinterpret_cast(ip);
+```
+
+注：
+
+1、在指针之间转换，将一个类型的指针转换为另一个类型的指针，无关类型；
+
+2、将指针值转换为一个整型数,但不能用于非指针类型的转换。
 
 **dynamic_cast**
 
-> 运行时类型识别（以区别以上三个均在编译时识别），用于将基类的指针或引用安全地转换成派生类的指针或引用。
->
+运行时类型识别（以区别以上三个均在编译时识别），用于将基类的指针或引用安全地转换成派生类的指针或引用。
 
 **总 结**
 
