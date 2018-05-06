@@ -2,9 +2,9 @@
 
 ## 程序设计基础
 
-#### 内存分配与管理
+### 内存分配与管理
 
-##### 内存分配方式
+#### 内存分配方式
 
   由C/C++编译的程序占用的内存分为以下几个部分
 
@@ -14,7 +14,7 @@
 4. 文字常量区：常量字符串就是放在这里的，程序结束后由系统释放。
 5. 程序代码区：存放函数体的二进制代码
 
-##### 堆和栈区别
+#### 堆和栈区别
 
 - 申请方式不同。
   - 栈由系统自动分配。
@@ -26,7 +26,7 @@
   - 栈，速度快，是一个先进后出的队列，进出一一对应，不会产生碎片。
   - 堆，速度慢，频繁的new/delete会造成大量碎片，使程序效率降低。
 
-##### 内存管理
+#### 动态内存
 
 **malloc、calloc、realloc、alloca**
 
@@ -66,7 +66,7 @@ int main()
 }
 ```
 
-##### 内存泄露
+#### 内存泄露
 
 ​	堆是动态分配内存的，并且可以分配很大的内存，使用不好会产生内存泄露。频繁使用malloc和free会产生内存碎片。
 
@@ -74,7 +74,7 @@ int main()
 
 ​	应用程序一般使用malloc、calloc、realloc、new等函数从堆中分配到一块内存，使用完后，程序必须负责响应地调用free、delete释放内存块，否则这块内存就不能再次使用，造成内存泄露。	
 
-##### new/delete和malloc/free区别
+#### new/delete和malloc/free区别
 
  [new/delete实现]( http://blog.csdn.net/passion_wu128/article/details/38966581)
 
@@ -92,14 +92,14 @@ int main()
 
 6. C++允许重载new/delete操作符，特别的，布局new的就不需要为对象分配内存，而是指定了一个地址作为内存起始区域，new在这段内存上为对象调用构造函数完成初始化工作，并返回此地址。而malloc不允许重载。
 
-#### 引用和指针
+### 引用和指针
 
 - 引用只是别名，不占用具体存储空间，只有声明没有定义；指针是具体变量，需要占用存储空间。
 - 引用在声明时必须初始化为另一变量，一旦出现必须为typename refname &varname形式；指针声明和定义可以分开，可以先只声明指针变量而不初始化，等用到时再指向具体变量。
 - 引用一旦初始化之后就不可以再改变（变量可以被引用为多次，但引用只能作为一个变量引用）；指针变量可以重新指向别的变量。
 - 不存在指向空值的引用，必须有具体实体；但是存在指向空值的指针。
 
-#### 指针数组和数组指针
+### 指针数组和数组指针
 
 ​	指针数组，是指一个数组里面装着指针，也即指针数组是一个数组。一个有10个指针的数组，其中每个指针指向一个整型数，那么次数组定义位：
 
@@ -113,7 +113,7 @@ int *a[10];
 int （*a）[10];
 ```
 
-#### strlen和sizeof
+### strlen和sizeof
 
 自定义函数实现strlen功能：
 
@@ -136,11 +136,11 @@ int strlen(const char *str){
 - **因为sizeof值在编译时确定，所以不能用来得到动态分配（运行时分配）存储空间的大小。**
 - `strlen("\0")=0;sizeof("\0")=2;`
 
-#### sizeof（结构体、联合体、类）
+### sizeof（结构体、联合体、类）
 
-#### 字符串相关函数
+### 字符串相关函数
 
-##### strcmp
+#### strcmp
 
 ```c
 int Strcmy(const char* str1,const char* str2)
@@ -158,7 +158,7 @@ int Strcmy(const char* str1,const char* str2)
 }
 ```
 
-##### strcat,strcpy,strncpy
+#### strcat,strcpy,strncpy
 
 `strcat(dest,scr)`把src所指字符串添加到dest尾处（覆盖dest结尾的'\'）并添加'\0'
 
@@ -194,7 +194,7 @@ char *my_strcpy( char *dst, const char *scr )
 }  
 ```
 
-#### memcpy,memset
+### memcpy,memset
 
 ```c++
 void *memcpy(void *dest,const void *src,size_t n);
@@ -214,7 +214,7 @@ void *memset(void *s,int ch,sizet n);
 
 功能：将s中前n个字节用ch替换并返回s，作用是一段内存中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法，
 
-####[const关键字](https://www.cnblogs.com/chogen/p/4574118.html)
+###[const关键字](https://www.cnblogs.com/chogen/p/4574118.html)
 
 常量：
 
@@ -276,7 +276,7 @@ int main
 }
 ```
 
-#### [static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
+### [static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
 
 **c语言中static的用法：**
 
@@ -343,7 +343,7 @@ class A{
 
 　　warning：不要再头文件中声明static的全局函数，不要在cpp内声明非static的全局函数，如果你要在多个cpp中复用该函数，就把它的声明提到头文件里去，否则cpp内部声明需加上static修饰；
 
-#### volatile关键字
+### volatile关键字
 
 ```c++
   volatile int i = 10; 
@@ -354,7 +354,7 @@ class A{
   - const 可以是 volatile （如只读的状态寄存器）
   - 指针可以是 volatile
 
-#### define和const定义常量
+### define和const定义常量
 
 - 用`#define MAX 255`定义的常量是**没有类型**的，所给出的是一个立即数，编译器只是把所定义的常量值与所定义的常量的名字联系起来，define所定义的宏变量在预处理的时候进行替换，在程序中使用到该常量的地方都要进行拷贝替换；
 
@@ -383,16 +383,16 @@ class A{
 
 ## C++相关语法
 
-#### struct和class
+### struct和class
 
 - C的struct与C++的class的区别：struct只是作为一种复杂数据类型定义，不能用于面向对象编程。 
 - C++中的struct和class的区别：对于成员访问权限以及继承方式，class中默认的是private的，而struct中则是public的。class还可以用于表示模板类型，struct则不行。
 
-#### 关键字
+### 关键字
 
-##### [auto和decltype](https://www.cnblogs.com/XiangfeiAi/p/4451904.html)
+#### [auto和decltype](https://www.cnblogs.com/XiangfeiAi/p/4451904.html)
 
-##### [explicit](https://www.cnblogs.com/ymy124/p/3632634.html)
+#### [explicit](https://www.cnblogs.com/ymy124/p/3632634.html)
 
 ​	explicit关键字只能用于**修饰只有一个参数的类构造函数**，它的作用是表明该构造函数是显示的，而非隐式的，跟它相对应的另一个关键字是implicit，意思是隐藏的，类构造函数默认情况下即声明为implicit。
 
@@ -439,7 +439,7 @@ int main()
 }
 ```
 
-####[显式类型转换](http://blog.csdn.net/u010275850/article/details/49452373)
+###[显式类型转换](http://blog.csdn.net/u010275850/article/details/49452373)
 
 c++primer（144）
 
@@ -499,7 +499,9 @@ char *pc=reinterpret_cast(ip);
 - 多态类之间的类型转换用daynamic_cast。
 - 不同类型的指针类型转换用reinterpreter_cast
 
-#### [智能指针](https://www.cnblogs.com/lanxuezaipiao/p/4132096.html)
+### 动态内存
+
+#### [智能指针](https://www.cnblogs.com/wxquare/p/4759020.html)
 
 ​	C++程序设计中使用堆内存是非常频繁的操作，堆内存的申请和释放都由程序员自己管理。程序员自己管理堆内存可以提高了程序的效率，但是整体来说堆内存的管理是麻烦的，C++11中引入了智能指针的概念，方便管理堆内存。使用普通指针，容易造成堆内存泄露（忘记释放），二次释放，程序发生异常时内存泄露等问题等，使用智能指针能更好的管理堆内存。
 
@@ -507,11 +509,123 @@ char *pc=reinterpret_cast(ip);
 
 ​	shared_ptr多个指针指向相同的对象。shared_ptr使用**引用计数**，每一个shared_ptr的拷贝都指向相同的内存。每使用他一次，内部的引用计数加1，每析构一次，内部的引用计数减1，减为0时，自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取需要加锁。
 
-- make_shared
+- 初始化。智能指针是个模板类，可以指定类型，传入指针通过构造函数初始化。也可以使用make_shared函数初始化。不能将指针直接赋值给一个智能指针，一个是类，一个是指针。例如std::shared_ptr<int> p4 = new int(1);的写法是错误的
+- 拷贝和赋值：**拷贝使得对象的引用计数增加1，赋值使得原对象引用计数减1**，当计数为0时，自动释放内存。后来指向的对象引用计数加1，指向后来的对象。
 
-  ​
+```c++
+auto p=make_shared<int>(42); //p指向的对象只有p一个引用者
+auto q=(p);   //p和q指向同一个对象，此对象有两个引用者
 
-#### hashmap、hashtable
+auto r=make_shared<int>(42);//p指向的对象只有r一个引用者
+r=p;     //给r赋值，令它指向另一个地址
+	     //递增q指向的对象的引用计数
+		//递减r原来指向的对象的引用计数
+		//r原来指向的对象已经没有引用者，会自动释放
+```
+
+- get函数获取原始指针
+- 注意不要用一个原始指针初始化多个shared_ptr，否则会造成二次释放同一内存
+- 注意避免循环引用，shared_ptr的一个最大的陷阱是循环引用，循环，循环引用会导致堆内存无法正确释放，导致内存泄漏。
+
+```c++
+#include <iostream>
+#include <memory>
+int main() {  
+        int a = 10;
+        std::shared_ptr<int> ptra = std::make_shared<int>(a);
+        std::shared_ptr<int> ptra2(ptra); //copy
+        std::cout << ptra.use_count() << std::endl;
+
+        int b = 20;
+        int *pb = &a;
+        //std::shared_ptr<int> ptrb = pb;  //error
+        std::shared_ptr<int> ptrb = std::make_shared<int>(b);
+        ptra2 = ptrb; //assign
+        pb = ptrb.get(); //获取原始指针
+
+        std::cout << ptra.use_count() << std::endl;
+        std::cout << ptrb.use_count() << std::endl;    
+}
+```
+
+##### unique_ptr
+
+​	unique_ptr“拥有”它所指向的对象。与shared_ptr不同，某个时刻只能有一个unique_ptr指向一个给定对象。当unique_ptr被销毁时，它所指向的对象也被销毁。
+
+​	与shared_ptr不同，没有类似make_ptr的标准库函数返回一个unique_ptr。定义一个shared_ptr时，需要将其绑定到一个new返回的 指针上。
+
+```c++
+unique_ptr<double> p1; //可以指向一个double的unique_ptr
+unique_ptr<int> p2(new int(42)); //p2指向一个值为42的int
+
+//由于一个unique_ptr拥有它指向的对象，因此unique_ptr不支持普通的拷贝或赋值操作
+unique_ptr<string> p1(new string("sss"));
+unique_ptr<string> p2(p1);       //错误：unique_ptr不支持拷贝
+unique_ptr<string> p3;
+p3=p2                            //错误：unique_ptr不支持赋值
+```
+
+​	虽然不能拷贝或赋值unique_ptr，但可以通过调用release或reset将指针的所有权从一个（非const）unique_ptr转移给另一个unique：
+
+```c++
+//将所有权从p1（接上p1，指向“sss”）转移给p2
+unique_ptr<string> p2(p1.release());  //release将p1置空
+unique_ptr<string> p3(new string("nnn"));
+//将所有权从p3转移到p2
+p2.reset(p3.release());//reset释放了p2原来指向的内存
+```
+
+##### weak_ptr
+
+​	weak_ptr是为了配合shared_ptr而引入的一种智能指针，因为它不具有普通指针的行为，没有重载operator*和->,它的最大作用在于协助shared_ptr工作，像旁观者那样观测资源的使用情况。weak_ptr可以从一个shared_ptr或者另一个weak_ptr对象构造，获得资源的观测权。但weak_ptr没有共享资源，它的构造不会引起指针引用计数的增加。使用weak_ptr的成员函数use_count()可以观测资源的引用计数，另一个成员函数expired()的功能等价于use_count()==0,但更快，表示被观测的资源(也就是shared_ptr的管理的资源)已经不复存在。weak_ptr可以使用一个非常重要的成员函数lock()从被观测的shared_ptr获得一个可用的shared_ptr对象， 从而操作资源。但当expired()==true的时候，lock()函数将返回一个存储空指针的shared_ptr。
+
+#### 动态数组
+
+​	new和delete运算符一次分配/释放一个对象，但某些应用需要一次为很多对象分配内存的功能。例如，vector和string都在连续内存中保存它们的元素，因此，当容器需要重新分配内存时，必须一次性为很多元素分配内存。
+
+​	为支持这种需求，C++语言和标准库提供了两种一次分配一个对象数组的方法。C++语言定义了另一种new表达式语法，可以分配并初始化一个对象数组。标准库中包含一个名为allocator的类，允许我们将分配和初始化分离。使用allocator通常会提供更好的性能和更灵活的内存管理能力。
+
+##### new和数组
+
+​	new分配一个对象数组：
+
+```c++
+//调用get_size()确定分配多少个int
+int *pia=new int[get_size()]; //pia指向第一个int
+
+//也可以用一个表示数组类型的别名来分配一个数组
+typedef int arrT[42];//arrT表示42个int的数组类型
+int *p=new arrT;     //分配一个42个int的数组；p指向第一个int
+```
+
+​	初始化动态分配对象的数组
+
+```c++
+int *pia=new int[10];           //10个未初始化的int
+int *pia2=new int[10](); 		//10个值初始化为0的int
+int *psa=new string[10];         //10个空string
+int *psa2=new string[10]();      //10个空string
+
+//10个int分别用列表中对应的初始化器初始化
+int *pia3=new int[10]{0,1,2,3,4,5,6,7,8,9};
+```
+
+​	释放动态数组
+
+```c++
+delete p;      //p必须指向一个动态分配的对象或为空
+delete [] pa;  //pa必须指向一个动态分配的数组或为空
+```
+
+##### allocator类
+
+（见STL源码分析）
+
+​	当分配一大块内存时，我们通常计划在这块内存上按需构造对象。在这种情况下，我们希望将内存分配和对象构造分离。这意味着我们可以分配大块内存，但只在真正需要时才执行对象创建操作。一般情况下，将内存分配和对象构造组合在一起可能导致不必要的浪费。
+
+​	标准库allocator类定义在memory头文件中，它将内存分配与对象构造分离开来，提供了一种类型感知的内存分配方式，它分配的内存是原始的、未构造的。
+
+### hashmap、hashtable
 
 ​	总体来说，hash_map 查找速度会比map快，而且查找速度基本和数据量大小无关，属于常数级别;而map的查找速度是log(n)级别。hash还有hash函数的耗时。当有100w条记录的时候，map也只需要20次的比较，200w也只需要21次的比较！所以并不一定常数就比log(n) 小！
 
@@ -529,7 +643,7 @@ char *pc=reinterpret_cast(ip);
 >
 > ​      一般现在**不建议用HashTable**,  ①是HashTable是遗留类，内部实现很多没优化和冗余。②即使在**多线程**环境下，现在也有同步的**ConcurrentHashMap**替代，没有必要因为是多线程而用HashTable。
 
-#### extern “C”
+### extern “C”
 
 - 被extern限定的函数或变量是extern类型的
 - 被extern "C"修饰的变量和函数是按照C语言方式编译和连接的
@@ -548,7 +662,7 @@ void *memset(void *, int, size_t);
 #endif
 ```
 
-#### **inline内联函数**
+### **inline内联函数**
 
 **特征：**
 
@@ -589,7 +703,7 @@ inline int functionName(int first, int secend,...) {/****/};
 2. inline函数无法随着函数库升级而升级。inline函数的改变需要重新编译，不像non-inline可以直接链接。
 3. 是否内联，程序员不可控。内联函数只是对编译器的建议，是否对函数内联，决定权在于编译器。
 
-#### 虚函数&内联函数
+### 虚函数&内联函数
 
 - 虚函数可以是内联函数，内联是可以修饰虚函数的，但是当虚函数表现多态性的时候不能内联。
 - 内联是在编译器建议编译器内联，而虚函数的多态性在运行期，编译器无法知道运行期调用哪个代码，因此虚函数表现为多态性时（运行期）不可以内联。
@@ -635,17 +749,19 @@ int main()
 } 
 ```
 
-#### C++11新特性
+### 模板
+
+### C++11新特性
 
 ##面向对象基础
 
-####面向对象三大特性
+###面向对象三大特性
 
 - 封装性：数据和代码捆绑在一起，避免外界干扰和不确定性访问。封装可以使得代码模块化。
 - 继承性：让某种类型对象获得另一个类型对象的属性和方法。继承可以扩展已存在的代码
 - 多态性：同一事物表现出不同事物的能力，即向不同对象发送同一消息，不同的对象在接收时会产生不同的行为（重载实现编译时多态，虚函数实现运行时多态）。多态的目的则是为了接口重用
 
-####对多态的理解
+###对多态的理解
 
 ​	多态性可以简单地概括为“一个接口，多种方法”，程序在运行时才决定调用的函数，它是面向对象编程领域的核心概念。
 
@@ -654,9 +770,9 @@ int main()
 ​	多态可分为**静态多态**和**动态多态**。静态多态是指在编译期间就可以确定函数的调用地址，并生产代码，这就是静态的，也就是说地址是早早绑定的，静态多态也往往被叫做静态联编。 动态多态则是指函数调用的地址不能在编译器期间确定，必须需要在运行时才确定，这就属于晚绑定，动态多态也往往被叫做动态联编。 
 ​	静态多态往往通过**函数重载**和**模版（泛型编程）**来实现
 
-#### 构造/析构函数
+### 构造/析构函数
 
-##### [拷贝构造函数](https://www.cnblogs.com/alantu2018/p/8459250.html)
+#### [拷贝构造函数](https://www.cnblogs.com/alantu2018/p/8459250.html)
 
 - **概念**
 
@@ -686,7 +802,7 @@ public:
 3. 从一个返回为非引用雷系的函数返回一个对象
 4. 用花括号初始化一个数组中的元素或一个聚合类中的成员
 
-##### [深拷贝和浅拷贝](https://www.cnblogs.com/always-chang/p/6107437.html)
+#### [深拷贝和浅拷贝](https://www.cnblogs.com/always-chang/p/6107437.html)
 
 - 深拷贝时，当被拷贝对象存在动态分配的存储空间时，需要先动态申请一块存储空间，然后逐字节拷贝内容。
 - 浅拷贝仅仅是拷贝指针字面值。
@@ -704,7 +820,7 @@ public:
 解决方法：重写默认拷贝构造函数 和 重载=操作符
 ```
 
-##### [拷贝赋值运算符](https://www.cnblogs.com/wangguchangqing/p/6141743.html)
+#### [拷贝赋值运算符](https://www.cnblogs.com/wangguchangqing/p/6141743.html)
 
 - **概念**：
 
@@ -758,7 +874,7 @@ public:
 
 		拷贝构造函数和赋值运算符的行为比较相似，都是将一个对象的值复制给另一个对象；但是其结果却有些不同，拷贝构造函数使用传入对象的值生成一个新的对象的实例，而赋值运算符是将对象的值复制给一个**已经存在的实例**。这种区别从两者的名字也可以很轻易的分辨出来，拷贝构造函数也是一种构造函数，那么它的功能就是创建一个新的对象实例；赋值运算符是执行某种运算，将一个对象的值复制给另一个对象（已经存在的）。**调用的是拷贝构造函数还是赋值运算符，主要是看是否有新的对象实例产生。如果产生了新的对象实例，那调用的就是拷贝构造函数；如果没有，那就是对已有的对象赋值，调用的是赋值运算符**。
 
-##### 阻止拷贝
+#### 阻止拷贝
 
 1. 定义删除的函数
 
@@ -790,7 +906,7 @@ public:
    }
    ```
 
-##### 析构函数
+#### 析构函数
 
 - 析构函是类的一个成员函数，名字由波浪号接类名构成。它没有返回值，也不接受参数：
 
@@ -816,7 +932,7 @@ public:
   5.对于临时对象，当创建它的完整表达式结束时被销毁
   ```
 
-##### 左值引用&右值引用
+#### 左值引用&右值引用
 
 左值引用符：&
 
@@ -865,7 +981,7 @@ const int &r3 = i * 42;//正确，我们可以将一个const的引用绑定到�
 int &&rr3 = std::move(rr1);//正确，显式使用rr1的右值引用  
 ```
 
-##### 对象移动
+#### 对象移动
 
 ​	很多情况下都会发生对象拷贝，在某些情况下，对象拷贝后就立即被销毁，在这些情况下，移动而非拷贝对象会大幅提升性能。
 
@@ -887,21 +1003,21 @@ StrVec::StrVec(Strvec &&s) noexcept  //移动操作不应抛出任何异常
 
 
 
-#### 运算符重载
+### 运算符重载
 
-#### 友元函数
+### 友元函数
 
-#### 计算类的大小
+### 计算类的大小
 
-#### 虚函数相关
+### 虚函数相关
 
-##### 虚函数
+#### 虚函数
 
-##### 虚函数表
+#### 虚函数表
 
-##### 纯虚函数
+#### 纯虚函数
 
-##### 析构函数为虚
+#### 析构函数为虚
 
 ```c++
 #include <iostream.h>
@@ -942,7 +1058,7 @@ void main()
 
 ## STL原理
 
-#### STL六大组件
+### STL六大组件
 
 1. 容器（containers）:各种数据结构，如vector,list,deque,set,map，用来存放数据。从实现角度来看STL容器是一种class template。
 2. 算法（algorithms）:各种常用的算法如sort,search,copy,erase… 从实现角度来看STL算法是一种function template。
@@ -951,9 +1067,9 @@ void main()
 5. 配接器（adapters）:一种用来修饰容器或仿函数或迭代器接口的东西。例如STL提供的queue和stack虽然看似容器，其实只能算是一种容器适配器，因为他们的底层全部借助deque，所有的操作都由底层的deque供应。
 6. 配置器（allocators）:负责空间配置与管理。从实现的角度来看，配置器是一个实现了动态空间配置、空间管理、空间释放的class template。
 
-#### [STL空间配置器](http://ju.outofmemory.cn/entry/80083)
+### [STL空间配置器](http://ju.outofmemory.cn/entry/80083)
 
-##### WHY
+#### WHY
 
 1. 小块内存带来的内存碎片问题
 
@@ -969,7 +1085,7 @@ void main()
 
    		为了解决上面这些问题，所以就提出有了内存池的概念。内存池最基本的思想就是一次向heap申请一块很大的内存(内存池)，如果申请小块内存的话就直接到内存池中去要。这样的话，就能够有效的解决上面所提到的问题。
 
-##### [两级空间配置器](https://www.cnblogs.com/dwdxdy/archive/2012/06/05/2537208.html)
+#### [两级空间配置器](https://www.cnblogs.com/dwdxdy/archive/2012/06/05/2537208.html)
 
 ​	SGI STL提供两级空间配置器，第一级空间配置器使用malloc/free函数，当分配的空间大小超过128 bytes的时候使用第一级空间配置器；第二级空间配置器使用了内存池技术，当分配的空间大小小于128 bytes的时候，将使用第二级空间配置器。
 
@@ -1013,7 +1129,7 @@ union obj
 
   3).调整当前自由链表回收当前的内存块．(类似于链表的插入操作)
 
-#### 常用STL容器
+### 常用STL容器
 
 - vector：底层数据结构为数组，支持快速随机访问
 - list：底层数据结构为双向链表，支持快速增删
@@ -1034,7 +1150,7 @@ union obj
 - hash_map：底层数据结构为hash表，无序，不重复
 - hash_multimap：底层数据结构为hash表，无序，可重复
 
-#### vector实现
+### vector实现
 
 ​	vector采用的数据结构非常简单：**线性连续空间**。它以两个迭代器start和finish分别指向配置得来的连续空间中目前已被使用的范围，并以迭代器end_of_storage指向整块连续空间（含备用空间）的尾端。
 
@@ -1058,7 +1174,7 @@ class vector{
 
 **[为什么1.5倍或者2倍扩容？](https://blog.csdn.net/dengheCSDN/article/details/78985684)**
 
-#### [迭代器失效问题](https://www.cnblogs.com/qiaoconglovelife/p/5370396.html)
+### [迭代器失效问题](https://www.cnblogs.com/qiaoconglovelife/p/5370396.html)
 
 c++ primer（315）
 
@@ -1082,7 +1198,7 @@ c++ primer（315）
 
   注意：当我们删除元素时，尾后迭代器总会失效。
 
-#### vector与list
+### vector与list
 
 1.vector数据结构
 ​	vector和数组类似，拥有一段连续的内存空间，并且起始地址不变。
@@ -1102,12 +1218,12 @@ c++ primer（315）
 3. 总之，如果需要高效的随机存取，而不在乎插入和删除的效率，使用vector;
    如果需要大量的插入和删除，而不关心随机存取，则应使用list。
 
-#### map与unordered_map
+### map与unordered_map
 
 - map： map内部实现了一个**红黑树**，该结构具有自动排序的功能，因此map内部的所有元素都是**有序的**，红黑树的每一个节点都代表着map的一个元素，因此，对于map进行的查找，删除，添加等一系列的操作都相当于是对红黑树进行这样的操作，故红黑树的效率决定了map的效率。
 - unordered_map: unordered_map内部实现了一个**哈希表**，因此其元素的排列顺序是杂乱的，**无序的**
 
-#### map底层实现
+### map底层实现
 
 红黑树特点：
 
@@ -1123,8 +1239,8 @@ c++ primer（315）
 
 ​	map,set底层都提供了排序功能，且查找速度快。红黑树实际上是AVL的一种变形，但是其比AVL(平衡二叉搜索树)具有更高的插入效率，当然查找效率会平衡二叉树稍微低一点点，毕竟平衡二叉树太完美了。但是这种查找效率的损失是非常值得的。它的操作有着良好的最坏情况运行时间，并且在实践中是高效的: 它可以在O(log *n*)时间内做查找，插入和删除，这里的*n*是树中元素的数目。
 
-#### hash表实现 
+### hash表实现 
 
 ## 其他
 
-#### 遇到coredump要怎么调试
+### 遇到coredump要怎么调试
