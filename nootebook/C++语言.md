@@ -92,14 +92,16 @@ int main()
 
 6. C++允许重载new/delete操作符，特别的，布局new的就不需要为对象分配内存，而是指定了一个地址作为内存起始区域，new在这段内存上为对象调用构造函数完成初始化工作，并返回此地址。而malloc不允许重载。
 
-### 引用和指针
+### 指针相关
+
+#### 引用和指针
 
 - 引用只是别名，不占用具体存储空间，只有声明没有定义；指针是具体变量，需要占用存储空间。
 - 引用在声明时必须初始化为另一变量，一旦出现必须为typename refname &varname形式；指针声明和定义可以分开，可以先只声明指针变量而不初始化，等用到时再指向具体变量。
 - 引用一旦初始化之后就不可以再改变（变量可以被引用为多次，但引用只能作为一个变量引用）；指针变量可以重新指向别的变量。
 - 不存在指向空值的引用，必须有具体实体；但是存在指向空值的指针。
 
-### 指针数组和数组指针
+#### 指针数组和数组指针
 
 ​	指针数组，是指一个数组里面装着指针，也即指针数组是一个数组。一个有10个指针的数组，其中每个指针指向一个整型数，那么次数组定义位：
 
@@ -113,30 +115,7 @@ int *a[10];
 int （*a）[10];
 ```
 
-### strlen和sizeof
 
-自定义函数实现strlen功能：
-
-```c
-int strlen(const char *str){
-    assert(str!=NULL);
-    int len=0;
-    while((*str++)!='\0')
-        len++;
-    return len;
-}
-int strlen(const char *str){
-    assert(str!=NULL);
-    return *str=='\0'? 0 : (1+strlen(++str));
-}
-```
-
-- sizeof是运算符，并不是函数，结果在编译时得到而非运行中获得；strlen是字符处理的库函数。
-- sizeof参数可以是任何数据的类型或者数据（sizeof参数不退化）；strlen的参数只能是字符指针且结尾是'\0'的字符串。
-- **因为sizeof值在编译时确定，所以不能用来得到动态分配（运行时分配）存储空间的大小。**
-- `strlen("\0")=0;sizeof("\0")=2;`
-
-### sizeof（结构体、联合体、类）
 
 ### 字符串相关函数
 
@@ -194,7 +173,7 @@ char *my_strcpy( char *dst, const char *scr )
 }  
 ```
 
-### memcpy,memset
+#### memcpy,memset
 
 ```c++
 void *memcpy(void *dest,const void *src,size_t n);
@@ -214,7 +193,9 @@ void *memset(void *s,int ch,sizet n);
 
 功能：将s中前n个字节用ch替换并返回s，作用是一段内存中填充某个给定的值，它是对较大的结构体或数组进行清零操作的一种最快方法，
 
-###[const关键字](https://www.cnblogs.com/chogen/p/4574118.html)
+### 关键字
+
+####[const关键字](https://www.cnblogs.com/chogen/p/4574118.html)
 
 常量：
 
@@ -276,7 +257,7 @@ int main
 }
 ```
 
-### [static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
+#### [static关键字](https://www.cnblogs.com/BeyondAnyTime/archive/2012/06/08/2542315.html)
 
 **c语言中static的用法：**
 
@@ -343,7 +324,7 @@ class A{
 
 　　warning：不要再头文件中声明static的全局函数，不要在cpp内声明非static的全局函数，如果你要在多个cpp中复用该函数，就把它的声明提到头文件里去，否则cpp内部声明需加上static修饰；
 
-### volatile关键字
+#### volatile关键字
 
 ```c++
   volatile int i = 10; 
@@ -354,7 +335,7 @@ class A{
   - const 可以是 volatile （如只读的状态寄存器）
   - 指针可以是 volatile
 
-### define和const定义常量
+#### define和const定义常量
 
 - 用`#define MAX 255`定义的常量是**没有类型**的，所给出的是一个立即数，编译器只是把所定义的常量值与所定义的常量的名字联系起来，define所定义的宏变量在预处理的时候进行替换，在程序中使用到该常量的地方都要进行拷贝替换；
 
@@ -380,6 +361,131 @@ class A{
 
       define – 不分配内存，给出的是立即数，有多少次使用就进行多少次替换，在内存中会有多个拷贝，消耗内存大 
       const – 在静态存储区中分配空间，在程序运行过程中内存中只有一个拷贝
+
+#### strlen和sizeof
+
+自定义函数实现strlen功能：
+
+```c
+int strlen(const char *str){
+    assert(str!=NULL);
+    int len=0;
+    while((*str++)!='\0')
+        len++;
+    return len;
+}
+int strlen(const char *str){
+    assert(str!=NULL);
+    return *str=='\0'? 0 : (1+strlen(++str));
+}
+```
+
+- sizeof是运算符，并不是函数，结果在编译时得到而非运行中获得；strlen是字符处理的库函数。
+- sizeof参数可以是任何数据的类型或者数据（sizeof参数不退化）；strlen的参数只能是字符指针且结尾是'\0'的字符串。
+- **因为sizeof值在编译时确定，所以不能用来得到动态分配（运行时分配）存储空间的大小。**
+- `strlen("\0")=0;sizeof("\0")=2;`
+
+### 结构体共用体枚举
+
+#### 概念
+
+##### 共用体
+
+​	结构体和共用体（联合）都是由不同的数据类型成员组成，但在任何同一时刻，共用体中只存放了一个被选中的成员，而结构体的所有成员都存在。对于共用体的不同成员赋值，将会对其他成员重写，原来的成员的值就不存在了，而对于结构体的不同成员赋值是互不影响的。
+
+##### 枚举
+
+​	枚举（enum）是一种用户自定义的类型，定义的基本格式为：
+
+`enum 枚举类型名 {枚举常量1[=整形常数]，枚举常量1[=整形常数]，…}  [变量名列表]`
+
+​	花括号中内容称为枚举表，其中的每一项称为枚举常量，换言之，枚举表是枚举常量的集合。枚举表中每项后的“=整形常数”是给枚举常量赋初值，用方括号代表可以省略，如果不给枚举常量赋值，编译器会给每一个枚举常量赋一个不同的整形值，第一个为0，第二个为1等。当枚举表中某个常量赋值后，其后的成员则按一次加1的规则确定其值。
+
+#### 空间计算
+
+##### struct
+
+遵循两个原则：
+
+- 整体空间是占用空间最大的成员（的类型）所占字节数的整数倍，但在32位Linux+gcc（vs下不满足）环境下，若最大成员类型所占字节超过4，如double是8，则整体空间是4的倍数即可。
+- 数据对齐原则——内存按结构体成员的先后顺序排列，当排到该成员变量时，其前面已摆放的空间大小必须是该成员类型大小的整数倍，如果不够则补齐，依次向后类推，但在Linux+gcc（vs下不满足）下，若某成员类型占字节数超过4，如double是8，则前面已摆放的空间大小是4的倍数即可，不够则补齐。
+
+```c++
+//struct空间计算例子，windows32环境
+struct s1{
+    char a;
+    double b;
+    int c;
+    char d;
+};                         //sizeof(s1)=24;
+struct s2{
+    char a;
+    char b;
+    int c;
+    double d;
+};						//sizeof(s2)=16;
+```
+
+##### 位域
+
+​	在结构体和类中，可以使用位域来规定某个成员所能占用的空间，所以使用位域能在一定程度上节省结构体占用的空间。
+
+​	使用位域的主要目的是**压缩存储**，其大致规则为：
+
+1. 如果相邻位域字段的类型相同，且其位宽之和小于类型的sizeof大小，则其后面的字段将紧邻前一个字段存储，直到不能容纳为止；
+2. 如果相邻位域字段的类型相同，但其位宽之和大于类型的sizeof大小，则后面的字段将从新的存储单元开始，其偏移量为其类型大小的整数倍；
+3. 如果相邻的位域字段类型不同，则各编译器的具体实现有差异，VC6采取不压缩方式，Dev-C++与gcc采取压缩方式；
+4. 如果位与字段之间穿插着非位域字段，则不能进行压缩；
+5. 整个结构体的总大小为最宽基本类型成员大小的整数倍。
+
+```c++
+//Linux+gcc
+struct a{
+    int f1:3;       //8位只占用前三位
+    char b;
+    char c;
+};                  //sizeof（a)=4;     VS下参见规则3不压缩，8
+
+struct b1{
+    char f1:3;
+    char f2:4;     //第一个字节可容纳f1和f2
+    char f3:5;
+}                  //sizeof(b1)=2;
+```
+
+
+
+##### “#pragma pack”
+
+​	基本用法：#pragma pack（n）,n为字节对齐数，其取值为1、2、4、8、16等，默认为8，如果这个值比结构体成员的sizeof值小，那么该成员的偏移量应该以此值为准，即结构体成员的偏移量应该取二者的最小值，公式如下：`offsetof(item)=min(n,sizeof(item));`
+
+```c++
+#pragma pack(4)
+struct node{
+  char f;          //0~3
+  int e;		  //4~7
+  short int a;     //8~9
+  char b;          //10
+};                 //sizeof(node)=12; 4的倍数
+
+#pragma pack(2)
+struct node{
+  char f;          //0~1
+  int e;           //2~5    #2位对齐，即是2的倍数地址，不能为4的倍数
+  short int a;     //6~7
+  char b;          //8
+};                 //sizeof（node）=10; 2的倍数
+
+#pragma pack(1)
+struct node{
+  char f;
+  int e;
+  short int a;
+  char b;
+};			 //sizeof（node）=8; 
+```
+
+
 
 ## C++相关语法
 
@@ -781,8 +887,6 @@ int main()
 
 ​	当使用**基类的引用或指针调用虚成员函数**时会执行动态绑定。动态绑定直到运行的时候才知道到底调用哪个版本的虚函数，所以必为每一个虚函数都提供定义，而不管它是否被用到，这是因为连编译器都无法确定到底会使用哪个虚函数。被调用的函数是与绑定到指针或引用上的对象的动态类型相匹配的那一个。
 
-​	
-
 ### 构造/析构函数
 
 #### [拷贝构造函数](https://www.cnblogs.com/alantu2018/p/8459250.html)
@@ -1163,7 +1267,95 @@ void main()
 
 2.多态的时候一定要将析构函数写成虚函数，防止内存泄露，各个子类维护自己内部数据释放。
 
+## 模板与泛型编程
+
+### 泛型编程
+
+​	泛型编程（Generic Programming）最初提出时的动机很简单直接：发明一种语言机制，能够帮助实现一个通用的标准容器库。所谓通用的标准容器库，就是要能够做到，比如用一个List类存放所有可能类型的对象这样的事；泛型编程让你编写完全一般化并可重复使用的算法，其效率与针对某特定数据类型而设计的算法相同。泛型即是指具有在多种数据类型上皆可操作的含义，与模板有些相似。STL巨大，而且可以扩充，它包含很多计算机基本算法和数据结构，而且将算法与数据结构完全分离，其中算法是泛型的，不与任何特定数据结构或对象类型系在一起。（baidubaike）
+
 ### 模板
+
+**函数模板**
+
+```c++
+//method.h
+template<typename T> void swap(T& t1, T& t2);
+#include "method.cpp"
+
+//method.cpp
+template<typename  T> void swap(T& t1, T& t2) {
+    T tmpT;
+    tmpT = t1;
+    t1 = t2;
+    t2 = tmpT;
+}
+
+//main.cpp
+#include <stdio.h>
+#include "method.h"
+int main() {
+    //模板方法 
+    int num1 = 1, num2 = 2;
+    swap<int>(num1, num2);
+    printf("num1:%d, num2:%d\n", num1, num2);  
+    return 0;
+}
+```
+
+**类模板**
+
+```c++
+#include<cstdio>
+
+//statck.h
+template <class T> class Stack {
+public:
+	Stack();
+	~Stack();
+	void push(T t);
+	T pop();
+	bool isEmpty();
+private:
+	T *m_pT;
+	int m_maxSize;
+	int m_size;
+};
+
+//stack.cpp
+template <class  T>  Stack<T>::Stack() {
+	m_maxSize = 100;
+	m_size = 0;
+	m_pT = new T[m_maxSize];
+}
+template <class T>  Stack<T>::~Stack() {
+	delete[] m_pT;
+}
+template <class T> void Stack<T>::push(T t) {
+	m_size++;
+	m_pT[m_size - 1] = t;
+
+}
+template <class T> T Stack<T>::pop() {
+	T t = m_pT[m_size - 1];
+	m_size--;
+	return t;
+}
+template <class T> bool Stack<T>::isEmpty() {
+	return m_size == 0;
+}
+
+//main.cpp
+int main() {
+	Stack<int> intStack;
+	intStack.push(1);
+	intStack.push(2);
+	intStack.push(3);
+	while (!intStack.isEmpty()) {
+		printf("num:%d\n", intStack.pop());
+	}
+	return 0;
+}
+```
 
 ## STL原理
 
