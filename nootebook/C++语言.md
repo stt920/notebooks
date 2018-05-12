@@ -1238,13 +1238,17 @@ virtual在函数中的使用限制：
 
 #### [虚函数表](https://www.cnblogs.com/tgycoder/p/5426628.html)
 
-![virtual fun table](./pic/virtual fun table.png)
+![virtual fun table](./pic/virtual_fun_table.png)
 
 nonstatic数据成员被放置到对象内部，static数据成员、static和nonstatic函数成员军备放到对象之外。对于虚函数的支持则分两部分完成：
 
 1、每一个class产生一堆指向虚函数的指针，并存放在虚函数表中（Virtual Table，vtbl）；
 
 2、每个对象被添加了一个指针，指向相关的虚函数表vtbl。通常这个指针被称为vptr。vptr的设定和重置都由每一个class的构造函数，析构函数和拷贝赋值运算符自动完成。
+
+另外，虚函数表地址的前面设置了一个指向type_info的指针，[RTTI（Run Time Type Identification）](http://www.cnblogs.com/tgycoder/p/5427303.html)运行时类型识别是由编译器在编译时生成的特殊类型信息，包括对象继承关系，对象本身的描述。RTTI是为多态而生成的信息，所以只有具有虚函数的对象才会生成。
+
+这个模型的优点在于它的空间和存取时间的效率；缺点如下：如果应用程序本身未改变，当所使用的类的nonstatic数据成员添加删除或修改时，需要重新编译。
 
 #### 纯虚函数
 
