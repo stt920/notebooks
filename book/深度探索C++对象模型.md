@@ -1,8 +1,8 @@
 # 深度探索C++对象模型
 
-### [第一章 关于对象模型](https://www.cnblogs.com/tgycoder/p/5426628.html)
+## [第一章 关于对象模型](https://www.cnblogs.com/tgycoder/p/5426628.html)
 
-#### C++对象模型
+### C++对象模型
 
 ​	此模型中，Nonstatic data members被配置于一个class object之内，static data members则被存放在个别的class object之外。Static和nonstatic function members也被存放在个别的class object之外。Virtual functions则分两个步骤支持之：
 
@@ -13,11 +13,11 @@
 
 ​	上图为C++对象模型示例。主要**优点**在于它的空间和存取时间的效率；主要**缺点**则是，如果应用程序代码本身未曾改变，但所用到的class objects和nonstatic data members有所改变，那么应用程序代码同样需要重新编译。
 
-#### 关键词带来的差异
+### 关键词带来的差异
 
 ​	struct和class从语法本质上差别并不大，无非是二者的默认继承和默认成员访问级别不同。但从一般来说，我们习惯用struct来代表一些简单数据的集合，用class来代表更为复杂的封装、继承的数据。
 
-#### 对象的差异
+### 对象的差异
 
 ​	C++程序设计模型直接支持三种程序设计范式
 
@@ -33,7 +33,7 @@
 - 加上任何由于数据对齐而填补上去的空间；
 - 加上支持virtual而由内部产生的任何额外负担。（虚函数表指针，4字节）
 
-##### 指针的类型
+#### 指针的类型
 
 ​	指向不同类型的指针有什么不同？
 
@@ -67,7 +67,7 @@ ZooAnimal *pza=&za;
 
   ![1.4](./pic/1.4.png)
 
-##### 加上多态后
+#### 加上多态后
 
 ​	定义一个Bear继承ZooAnimal：
 
@@ -105,9 +105,9 @@ Bear *pb=&b;
 
 ​	它们每个指针指向Bear object的第一个byte。其间差别是，**pb所涵盖的地址包含整个Bear object，而pz所涵盖的地址只包含Bear object中的ZooAnimal subobject**。
 
-​	除了ZooAnimal subobject中出现的members，不能使用pz来直接处理Bear中的任何members**。唯一例外是通过virtual机制**（注：具体参考书上内容，virtual实现运行时多态）。
+​	除了ZooAnimal subobject中出现的members，不能使用pz来直接处理Bear中的任何members。**唯一例外是通过virtual机制**（注：具体参考书上内容，virtual实现运行时多态）。
 
-### 第二章 构造函数语义学
+## 第二章 构造函数语义学
 
 
 
