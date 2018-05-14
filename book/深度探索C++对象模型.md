@@ -109,5 +109,89 @@ Bear *pb=&b;
 
 ## 第二章 构造函数语义学
 
+### [Default Constructor的构造操作](https://blog.csdn.net/zyl_1102179268/article/details/60370626)
+
+​	C++并不会为每一个没有声明构造函数的类生成一个default constructor。只有在以下四种情况下，会造成“编译器必须为未声明constructor的classes合成一个default constructor”:
+
+1. "带有Default Constructor"的Member Class Object
+
+   ​	如果一个class没有任何constructor，但它内含一个member object，而后者有default constructor，那么这个class的implicit default constructor就是“nontrivial”（有用的），编译器要为该class合成一个default constructor。不过这个合成操作只在constructor真正需要被调用时才会发生。
+
+2. “带有Default Constructor”的Bases Class
+
+   ​	如果一个没有任何constructors的class派生自一个”带有default constructor“的base class，那么这个derived class的default constructor会被视为nontrivial（有用的），并因此需要被合成出来。它将调用上一层base classes的default constructor（根据声明顺序）。对一个后继派生的class而言，这个合成的constructor和一个”被显示提供的default constructor“没有什么差异。
+
+   ​	如果设计这提供了多个constructors,但没有default constructor，编译器会空中现有的第一个constructor，将”用以调用所有必要之default constructor“的程序代码加进去。它不会合成新的default constructor。
+
+3. ”带有Virtual Function“的Class
+
+   ​	另有两种情况也需要合成default constructor：
+
+   - class声明（或继承）一个virtual function；
+
+   - class派生自一个继承串链，其中一个或多个的virtual bases classes；
+
+     注：有virtual function存在是需要default constructor在编译期间产生virtual funtion table，以及一个指向虚函数表的指针（vptr）
+
+4. ”带有一个Virtual Bases Class“的Class
+
+   ​	 虚继承也会在子类对象中被合成一个指向虚基类的指针，因此也要被初始化，所以必须要构造函数，虚基类或者虚继承保证子类对象中只有一份虚基类的对象。
+
+**总结：**
+
+​	以上4中情况下，”编译器必须为未声明constructor的classes合成一个default constructor“。c++标准把这些合成物称为implicit nontrivial default constructors。被合成的constructor只能满足编译器（非程序）的需要。它之所以能完成任务，是借着”**调用member object或base class的default constructor**“或是”**为每一个object初始化其virtual function机制或virtual base class机制**“而完成的。没有存在那4种情况而又没有声明任何constructor的classes，我们说它们拥有implicit trivial（无用的）default constructors，它们并不会被合成出来。 
+
+**C++新手一般两个常见的误解：**
+
+- 任何class没有定义default constructor，就会被合成出来一个；wrong！
+- 编译器合成出来的default constructor会显式设定”class内每一个data member的默认值“；wrong！
+
+### Copy Constructor的构造操作
+
+​	有三种情况会以一个对象的内容作为另一个对象的初值：
+
+1. 一个object做显示初始化操作
+2. 当object被当作参数交给某个函数的时候
+3. 当函数传回一个class object时
+
+- Default Memberwise(对每一各member施以……) Initialization
+
+  ​	如果class没有提供一个explicit copy constructor又当如何？当class object以”相同class的另一个object“作为初值，其内部是所谓的default memberwise initialization手法完成的，也就是把一个内建的或派生的data member的值，从某个object拷贝一份到另一个object身上。不过它并不会拷贝其中的member class object，而是以递归的方式施行memberwise initialization。
+
+> Dafault constructor和copy constructor在必要的时候才由编译器产生出来
+
+​	像default constructor一样，C++ Standard上说，如果class没有声明一个copy constructor，就会有隐式的声明（implicitly declared）或隐式的定义（implicitly defined）出现。和以前一样，C++ Standard把copy constructor区分为trivial和nontrivial（没有用的/有用的）两种。只有nontrivial 的实例才会被合成于程序之中。决定一个copy constructor是否为trivial的标准在于class是否展现出所谓的”Bitwise Copy Semantics“。
+
+- Bitwise Copy Semantics（逐次拷贝）
+
+  **当class展现了Bitwise Copy Semantics则不需要合成一个Dafault copy constructor，反之则需要。**
+
+- 不要Bitwise Copy Semantics！
+
+  什么时候class不展现出”Bitwise Copy Semantics“呢？（即**需要合成Dafault copy constructor**）
+
+  1. 当class内含一个member object而后者的class存在一个copy constructor时；
+  2. 当class继承自一个base class而后者存在一个copy constructor时；
+  3. 当class声明了一个或多个virtual functions时；
+  4. 当class派生自一个继承串链，其中一个或多个virtual base classes时。
+
+- 重新设定Virtual Table的指针
+
+  ​	编译器期间的两个程序扩张操作（只要一个class声明了一个或多个virtual functions就会如此）：
+
+  - 增加一个virtual function table（vtbl），内含每一个有作用的virtual function的地址；
+
+  - 一个指向virtual function table的指针（vptr），安插在每一个class object内。
+
+    当编译器导入一个vptr到class之中时，该class就不再展现Bitwise Semantics了，编译器需要合成一个copy constructor以求将vptr适当初始化。
+
+- 处理Virtual Base Class Subbobject
+
+### 程序转化语意学
+
+## 第三章 Data语意学
+
+
+
 
 
