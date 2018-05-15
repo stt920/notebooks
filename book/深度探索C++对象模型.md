@@ -107,7 +107,7 @@ Bear *pb=&b;
 
 ​	除了ZooAnimal subobject中出现的members，不能使用pz来直接处理Bear中的任何members。**唯一例外是通过virtual机制**（注：具体参考书上内容，virtual实现运行时多态）。
 
-## 第二章 构造函数语义学
+## 第二章 构造函数语意学
 
 ### [Default Constructor的构造操作](https://blog.csdn.net/zyl_1102179268/article/details/60370626)
 
@@ -240,14 +240,14 @@ public:
     //……
 private:
     float x;
-    static List<Point3d*> freList;
+    static List<Point3d*> freeList;
     float y;
     static const int chuckSize=250;
     float z;
 };
 ```
 
-​	**Nonstatic data member在class object中的排列顺序和其被声明的顺序一样，**任何中间介入的static data member如freList、chuckSize都不会被放进对象布局中。在上例中Point3d对象是由3个float组成的，顺序是x,y,z。static data members存放在程序的data segment中，和个别的class object无关。
+​	**Nonstatic data member在class object中的排列顺序和其被声明的顺序一样**，任何中间介入的static data member如freeList、chuckSize都不会被放进对象布局中。在上例中Point3d对象是由3个float组成的，顺序是x,y,z。static data members存放在程序的data segment中，和个别的class object无关。
 
 ​	C++标准要求，在同一个access section（也就是private、public、protected等区段）中，members的排列顺序只需符合“较晚出现的members在class object中较高的地址”这一条即可。也就是说，各个members并不一定得连续排列。members的边界调整（alignment）可能需要补充一些bytes。
 
@@ -257,7 +257,156 @@ private:
 
 ### Data member的存取
 
+已知下面这段代码：
 
+```c++
+Point3d origin;
+origin.x=0.0;
+```
+
+​	x的存取成本是什么？答案视x和Point3d如何声明而定。x可能是个static member，也可能是nonstatic member。Point可能是个独立（非派生）的class，也可能是从另一个单一的base class派生而来。
+
+​	抛出问题。如果有两个定义，origin和pt：
+
+```
+Point3d origin,*pt=&origin;
+```
+
+​	用它们存取data members，例如：
+
+```c++
+origin.x=0.0;
+pt->x=0.0;
+```
+
+​	两种存取方式是否有重大差异？
+
+#### Static Data Members
+
+​	类的每个static成员都只有一个实例，存放在程序的data segment之中，和对象无关；因此对于这种情况，对x的存取并不会招致任何空间和时间上的额外负担。从指令执行的观点来看，这是C++语言中”通过一个指针和通过一个对象来存取member，结论完全相同“的唯一一种情况。
+
+#### Nonstatic Data Members
+
+​	欲对一个nonstatic data members进行存取操作，编译器需要把class object的起始地址加上data member的**偏移地址**。例如：
+
+```c++
+//源代码
+origin._y=0.0;
+//编译后的代码
+*(&origin+(&Point3d::_y-1))=0.0;
+```
+
+### "继承"与Data member
+
+#### 只要继承不要多态
+
+​	在有继承的情况下，可能会导致空间上的浪费。我们来看这样一个例子：
+
+```c++
+class Concrete{
+public:
+	//……
+private:
+	int val;
+	char c1;
+	char c2;
+	char c3;
+};
+```
+
+![concreteobject](./pic/concreteobject.png)
+
+​	这个类中存有一个int和三个char，如果我们把这些变量都放到一个类中声明，那么算上alignment，它的对象大小为8字节。
+
+​	现假设Concrete分裂为三层结构：
+
+```c++
+class Concrete1{
+public:
+	//……
+private:
+    int val;
+    char bit1;
+};
+
+class Concrete2:public Concrete1{
+public:
+    //……
+private:
+    char bit2;
+};
+
+class Concrete3:public Concrete2{
+public:
+    //……
+private:
+    char bit3;
+};
+```
+
+​	那么Concrete3的对象的大小将达到16字节，比原先的设计多了100%！
+
+​	这是因为alignment(边界调整)导致的，因为C++的对象模型中，在一个继承而来的类的内存分布里，各个基类需要分别遵循alignment，从而导致了空间的浪费。具体地对象布局可见下图：
+
+![concreteobject2](./pic/concreteobject2.png)
+
+#### 加上多态
+
+​	在这种情况下，无论是时间还是空间上，访问类的成员都会带来一定额外的负担，主要体现在以下几个方面：
+
+1. virtual table，用来存放它所声明的每一个virtual functions的地址。
+2. 每一个对象中会有一个vptr，提供执行期的链接。
+3. 编译器会重写constructor和destructor，使其能够创建和删除vptr
+
+#### 多重继承
+
+​	多重继承既不像单一继承，也不容易模塑出其模型。多重继承的复杂度在于derived class和其上一个base class乃至上上一个base class……之间的“非自然”关系。例如，考虑下面这个多重继承所获得的class vertex3d:
+
+```c++
+class Point2d{
+public:
+    //……
+protected:
+   float _x,_y;
+};
+
+class Point3d:public Point2d{
+public:
+    //……
+protected:
+   float _z;
+};
+
+class Vertex{
+public:
+    //……
+protected：
+    Vertex *next；
+};
+
+class Vertex3d:public Point3d,public Vertex{
+public:
+    //……
+protected:
+    float mumble;
+};
+```
+
+继承关系如下：
+
+![mulinherited](C:\Users\Administrator\Desktop\notebook\book\pic\mulinherited.png)
+
+
+
+
+
+#### 虚拟继承
+
+### 成员对象的效率
+
+### 指向Data Members的指针
+
+## 第四章 Function语意学
 
 
 
