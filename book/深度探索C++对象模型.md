@@ -185,11 +185,81 @@ Bear *pb=&b;
 
     当编译器导入一个vptr到class之中时，该class就不再展现Bitwise Semantics了，编译器需要合成一个copy constructor以求将vptr适当初始化。
 
-- 处理Virtual Base Class Subbobject
+- 处理Virtual Base Class Subobject（虚继承）
 
 ### 程序转化语意学
 
+​	介绍编译器对程序执行过程的优化。
+
+### 成员们的初始化队伍
+
+​	当你写下一个constructor时，就有机会设定class members的初值。要不是经由member intialization list，就是在constructor函数本体之内。除了4种情况，两种选择差不多。
+
+​	在下列情况下，为了让程序能够被顺利编译，**[必须使用member intialization list](http://www.cnblogs.com/codingmengmeng/p/6285580.html)**：
+
+1. 当初始化一个reference member时；
+
+2. 当初始化一个const member；
+
+3. 当调用一个base class的constructor，而它拥有一组参数时；（如果类存在继承关系，派生类必须在其初始化列表中调用基类的构造函数）
+
+4. 当调用一个member class的constructor，而它拥有一组参数时。（注：类成员为没有默认构造函数的类类型）
+
+   注：**list中的初始化顺序是由class中member的声明顺序决定的，而不是由initialization list中的排列顺序决定的。**（不注意会导致以下问题）
+
+   ```c++
+   class X{
+       int i;
+       int j;
+   public:
+   	X(int val):j(val),i(j){}
+   	//……
+   }
+   ```
+
+   ​	上述程序看起来是要把j设初值为val，再把i设初值为j。问题在于，由于声明顺序的缘故，initialization list中的i(j)比j(val)更早执行。但因j一开始未有初值，所以i(j)的执行结果导致i无法预知	其值。
+
 ## 第三章 Data语意学
+
+​	C++对象模型尽量以空间优化和存取速度优化的考虑来表现nonstatic data members，并且保持和C语言struct数据配置的兼容性，它把数据直接存放在每一个class object中。对于继承而来的nonstatic data members也是如此。不过并没有强制定义其间的排列顺序。至于static data members，则被放置在程序的一个global data segment中，不会影响个别class object的大小，static data members永远只存在一份实例。
+
+​	每一个class object必须有足够的大小以容纳它所有的nonstatic data members。但有时候可能比预想的还大，原因是：
+
+1. 有编译器自动加上额外的data members，用以支持某些语言特性（主要是各种virtual特性）；
+2. 因为alignment（边界调整）的需要。
+
+### Data member的绑定
+
+### Data member的布局
+
+已知下面一组data member：
+
+```c++
+class Point3d{
+public:
+    //……
+private:
+    float x;
+    static List<Point3d*> freList;
+    float y;
+    static const int chuckSize=250;
+    float z;
+};
+```
+
+​	**Nonstatic data member在class object中的排列顺序和其被声明的顺序一样，**任何中间介入的static data member如freList、chuckSize都不会被放进对象布局中。在上例中Point3d对象是由3个float组成的，顺序是x,y,z。static data members存放在程序的data segment中，和个别的class object无关。
+
+​	C++标准要求，在同一个access section（也就是private、public、protected等区段）中，members的排列顺序只需符合“较晚出现的members在class object中较高的地址”这一条即可。也就是说，各个members并不一定得连续排列。members的边界调整（alignment）可能需要补充一些bytes。
+
+​	编译器还会合成一些内部使用的data members，以支持整个对象模型。vptr就是这样的东西。vptr传统上它被安放在所有显示声明memebers的最后，不过如今也有一些编译器把vptr放在一个class object的最前端。
+
+​	C++允许编译器将多个access sections中的data members自由排列，不必在乎它们出现在class声明中的顺序，不过目前没有编译器这么做。
+
+### Data member的存取
+
+
+
+
 
 
 
