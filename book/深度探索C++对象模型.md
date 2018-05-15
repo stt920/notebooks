@@ -396,9 +396,38 @@ protected:
 
 ![mulinherited](C:\Users\Administrator\Desktop\notebook\book\pic\mulinherited.png)
 
+​	对一个多重派生对象，将其地址指定给”最左端（也就是第一个）base class的指针“，情况将和单一继承时相同，因为二者都指向相同的起始地址。需付出的成本只有地址的指定操作而已。至于第二个或后继的base class的地址指定操作，则需要将地址修改过：加上介于中间的base class subobject大小，例如：
 
+```c++
+Vertex3d v3d;
+Vertex *pv;
+Point2d *p2d;
+Point3d *p3d;
+```
 
+对于操作：
 
+```c++
+pv=&v3d;
+```
+
+需要这样的内部转化：
+
+```c++
+//虚拟C++代码
+pv=(Vertex*)(((char*)&v3d)+sizeof(Point3d));
+```
+
+而对于下面操作：
+
+```c++
+p2d=&v3d;
+p3d-&v3d;
+```
+
+只需要简单地拷贝其地址就好。
+
+![duochong2](./pic/duochong2.png)
 
 #### 虚拟继承
 
