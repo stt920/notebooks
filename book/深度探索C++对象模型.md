@@ -394,7 +394,7 @@ protected:
 
 继承关系如下：
 
-![mulinherited](C:\Users\Administrator\Desktop\notebook\book\pic\mulinherited.png)
+![mulinherited](./pic/mulinherited.png)
 
 ​	对一个多重派生对象，将其地址指定给”最左端（也就是第一个）base class的指针“，情况将和单一继承时相同，因为二者都指向相同的起始地址。需付出的成本只有地址的指定操作而已。至于第二个或后继的base class的地址指定操作，则需要将地址修改过：加上介于中间的base class subobject大小，例如：
 
@@ -431,15 +431,121 @@ p3d-&v3d;
 
 #### 虚拟继承
 
-### 成员对象的效率
+​	在虚拟继承中，C++对象模型将Class分为两个区域，一个是不变区域，直接存储在对象中；一个是共享区域，存储的是virtual base class subobjects，它在内存中单独存储在某处，derived class object持有指向它的指针。在cfront编译器中，每一个derived class object中安插一些指针，每个指针指向一个virtual base class，为此需要付出相应的时间和空间成本。如下所示：
 
-### 指向Data Members的指针
+```c++
+class Point2d{
+public:
+    //……
+protected:
+   float _x,_y;
+};
+
+class Point3d:public virtual Point2d{
+public:
+    //……
+protected:
+   float _z;
+};
+
+class Vertex：public virtual Point2d{
+public:
+    //……
+protected：
+    Vertex *next；
+};
+
+class Vertex3d:public Point3d,public Vertex{
+public:
+    //……
+protected:
+    float mumble;
+};
+//具体的类同上一节多重继承，不同的是Vertex和Point3d虚拟继承了Point2d
+void Point3d::operator+=(const Point3d&rhs)
+{
+    x+=rhs.x;
+    y+=rhs.y;
+    z+=rhs.z;
+}
+ 
+//编译器翻译后的版本
+_vbcPoint2d->x+=rhs._vbcPoint2d->x;
+_vbcPoint2d->y+=rhs._vbcPoint2d->y;
+z+=rhs.z;
+```
 
 ## 第四章 Function语意学
 
+### Member的各种调用方式
+
+#### Nonstatic Member Functions
+
+​	C++要求非静态成员函数必须要**和一般的非成员函数具有相同的效率**。采取的措施是通过以下步骤将成员函数实例转换为对等的非成员函数实例：
+
+1. 改写函数的原型（signature）以安插一个额外的参数this到成员函数中，用以提供一个存取管道
+
+2. 将每一个对非静态成员变量的存取操作改为经由this来存取
+
+3. 将成员函数重新写成一个外部函数，将函数名称经过“mangling”处理，使其在程序中成为独一无二的词汇，这个矫正操作不包含函数的返回值
+
+   关于mangling操作，即name mangling(名称的特殊处理)操作有一个成熟的规则：
+
+   - 成员函数的名称前面加上class的名称
+   - 为了应付重载，再在后面加上参数链表，记住，返回值并不作为参考
+
+#### Virtual Member Functions
+
+我们假设foo()是一个虚函数，那么以下的调用：
+
+```c++
+ptr->foo()  
+```
+
+将被内部转化为：
+
+```c++
+(*ptr->vptr[1])(ptr)  
+```
+
+其中vptr表示由编译器产生的指针，指向virtual table，注意一个class内可能含有多个vptrs。但是对于以下调用：
+
+```c++
+obj.foo()  
+```
+
+如果编译器将其转换为上面一样的调用，虽然语意正确，但是没有必要。因为由对象直接调用不会产生多态，在编译期间即可决议，即这种操作应该总是被编译器像对待一般非静态成员函数一样加以决议——重写函数原型，转换为同等的非成员函数调用。这就是为什么即使覆盖了虚函数表，用对象调用虚函数也不会产生多态的原因。
+
+#### Static Member Functions
+
+其实只要注意静态成员函数没有this指针，**其它的转换操作和非静态是一样的**，以下特性都是根据此特性来的：
+
+a.不能直接存取其class的非静态成员
+
+b.不能被声明为const、volatile、virtual，因为这些都需要this指针来支持
+
+c.不需要经由class object才被调用
+
+### Virtual Member Functions
+
+​	在C++中，多态表示“以一个public base class的指针（或reference），寻址出一个drived class object”的意思。例如下面声明：
+
+```c++
+Point *ptr;
+ptr=new Point2d;
+```
+
+​	ptr的多态机能主要扮演一个输送机制的角色，经由它，我们可以在程序的任何地方采用一组public derived类型。这种多态形式被称为消极的（passive），可以在编译期完成——virtual base class的情况除外。当被指出的对象真正被使用时，多态也就变成积极的（active）了。
+
+​	执行期需要正确调用virtual function需要知道:
+
+- ptr所指对象的真实类型。可使我们正确找到调用实例；
+- 实例的位置，以便能够调用它。
+
+单一继承下Virtual Table布局：
+
+![4.1](./pic/4.1.png)
 
 
 
-
-
-
+#### 多重继承下的Virtual Functions
