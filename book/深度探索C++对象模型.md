@@ -546,6 +546,127 @@ ptr=new Point2d;
 
 ![4.1](./pic/4.1.png)
 
-
-
 #### 多重继承下的Virtual Functions
+
+如下图所示继承关系：
+
+```c++
+class base1{ ... };  
+class base2{ ... };  
+class derived:public base1,public base2{ ... };
+```
+
+![duochongjicheng](./pic/duochongjicheng.png)
+
+派生类支持虚函数的困难度，统统落在了base2的身上。base1的多态是毫无困难的，因为base1的内容在派生类的上方，可以使得完美表现多态，而base2就悲剧了，在中间，想要支持多态，有点困难，比如下面的例子：  
+
+```c++
+base2 *pbase2 = new derived;  
+//编译器会产生以下代码  
+derived *temp = new derived;  
+base2 *pbase2 = temp?temp+sizeof(base1):0  
+```
+
+因为编译器要确保派生类能够表现的和基类一样，“is a”关系。当程序员需要删除pbase2指针的时候，指针必须再一次调整，以之处完整对象的起始点。 
+
+​	多重继承下，一个drived class内含n-1个额外的virtual tables，n表示其上一层base class的个数（因此，单一继承将不会有额外的virtual tables）。对于本例的Drivered而言，会有两个virtual tables被编译器产生出来：
+
+1. 一个主要实例，与Base1共享；
+2. 一个次要实例，与Base2有关。
+
+对于每一个virtual tables，Drivered对象中有对应的vptr。vptrs将在constructor(s)中被设立初值。
+
+下图为本例Virtual Table的布局：
+
+![4.2](./pic/4.2.png)
+
+#### 虚拟继承下的Virtual Functions
+
+### Inline Function
+
+​	在C++中，我们并不能强迫将任何函数都变成lnline，虽然有inline这个关键字，但这只是个请求，编译器并不一定会接受。一般而言，处理一个内联函数有两个阶段：
+
+1. 分析函数定义，以决定函数的“intrinsic inline ability”，即判断函数的复杂程度，申明为内联是否合算；（要求其执行成本比一般函数调用及返回机制所带来的负荷低）
+2. 真正的内联函数扩展操作是在调用的那一点上，这会带来参数的求值操作和临时性对象的管理。
+
+## [第五章 构造、析构、拷贝语意学](https://blog.csdn.net/ruan875417/article/details/46470417)
+
+1、 一般而言，class的data member应该被初始化，而且只在constructor中或其它member functions中初始化，其它任何操作都将破坏其封装性质，使其维护和修改更加困难。
+
+2、 可以定义并调用一个pure virtualfunction，但它只能被静态调用，不能经由虚拟机制调用。
+
+3、 class设计者一定得定义pure virtual destructor，因为每一个derived class destructor会被编译器加以扩张，静态调用每一个virtualbase class以及上一层base class的destructor。只要缺乏任何一个base class destructors的定义，就会导致链接失败。
+
+### “无继承”情况下的对象构造
+
+​	在“无继承”情况下，观念上，编译器会为class声明一个trivial default constructor、一个trivial destructor、一个trivial copy constructor，以及一个trivial copy assignment operator。然而，事实上trivial members要不是没被定义就是没被调用。
+
+#### 抽象数据类型
+
+​	如果要将class中的所有成员都设定为常量初值，那么给予一个explicit initialization list会比较有效率些（比起意义相同的constructor的inline expansion而言）。甚至local scope中也是如此，如下例：
+
+```c++
+void mumble()
+{
+    Point local1={1.0,1.0,1.0};
+    Point local2;                    
+    
+    //相当于一个inline expansion
+    //explicit initialization list会稍微快些
+    local2._x=1.0;
+    local2._y=1.0;
+    local2._z=1.0;
+}
+```
+
+​	local1的初始化操作会比local2的有效率些。
+
+​	Explicit initialization list有三项缺点：
+
+- 只有当class members都是public时,才有效；
+- 只能指定常量,因为它们在编译时期就可以被评估求值；
+- 由于编译器并没有自动施行之,所以初始化行为的失败可能会比较高一些；
+
+#### 为继承做准备
+
+​	具有多态性质相关的类，将为“继承性质”以及某些操作的动态决议做准备。virtual functions的导入促使每一个class object有用一个virtual table pointer。这个指针给我们提供了virtual接口的弹性，其成本是：每一个object需要额外的一个word空间。除了每一个class object多负担一个vptr之外，virtual function的导入引发编译器对class产生膨胀作用：
+
+- 我们所定义的constructor被附加一些代码，以便初始化vptr；
+- 合成一个copy constructor和一个copy assignment opertor，而且其操作不再是trivial（但implicit destructor仍是trivial）；
+
+### 继承体系下的对象构造
+
+ 	一般而言，继承体系下编译器对constructor所做的扩充操作以及次序大约如下：
+
+1. 记录在member initialization list中的data members初始化操作会被放进constructor的函数本体，并以members的声明顺序为顺序；
+2. 如果一个member并没有出现在member initialization list之中，但它有一个default constructor，那么该default constructor必须被调用；
+3. 在那之前，如果class object有virtual table pointer(s)，它（们）必须被设定初值，指向适当的virtual table(s);
+4. 在那之前，所有上一层的base class constructors必须被调用，以base class的声明顺序为顺序（与member inlitialization list顺序没有关联）
+   - 如果base class被列于member initialization list中，那么任何显式指定的参数都应该传递过去；
+   - 如果base class没有被列于member initialization list中，而它有default constructor，那么就调用之；
+   - 如果base class是多重继承下的第二或后继的base class，那么this指针必须有所调整。
+5. 在那之前，所有virtual base class constructors必须被调用，从左至右，从最深至最浅；
+   - 如果class被列于member initialization list中，那么如果有任何显式指定的参数，都应该传递过去。如果没有列于list之中，而class有一个default constructor，亦应该调用之；
+   - 此外，class中的每一个virtual base class subobject的偏置位置，必须在执行期可被存取；
+   - 如果class object是最底层的class，其constructors可能被调用；某些用以支持这一行为的机制必须被放进来。
+
+#### 虚拟继承
+
+考虑下面三种类的派生情况：
+
+```c++
+class Vertex : virtual public Point{...};
+class Vertex3d : public Point3d,public Vertex{...};
+class PVertex : public Vertex3d{...};
+```
+
+![virtualjicheng](./pic/virtualjicheng.png)
+
+
+
+#### vptr初始化语意学
+
+### 对象赋值语意学
+
+### 析构语意学
+
