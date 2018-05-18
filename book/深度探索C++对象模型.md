@@ -662,11 +662,52 @@ class PVertex : public Vertex3d{...};
 
 ![virtualjicheng](./pic/virtualjicheng.png)
 
+​	Vertex的constructor必须也调用Point的constructor。然而，当Point3d和Vertex同为Vertex3d的subobjects时，他们对Point constructor的调用操作一定不可以发生；取而代之的是，作为一个底层的class，Vertex3d有责任将Point初始化。而更往后（往下）的继承，则由PVertex来赋值完成“被共享之Point subobject”。
 
+​	因此，编译器在虚拟继承中需要对constructor采用不同与普通继承的扩充。
 
 #### vptr初始化语意学
 
-### 对象赋值语意学
+​	vptr初始化操作应该如何处理？在base class constructors调用操作后，但是在程序员供应的代码或是“member initialization list中所列的members初始化操作”之前。
+
+​	constructor执行算法过程：
+
+1. 在derived class constructor中，“所有virtual table classes”及“上一次base class”的constructors会被调用；
+2. 上述完成后，对象的vptr(s)被初始化，指向相关的virtual table(s)；
+3. 如果由member initialization list的话，将在constructor体内展开来。这必须在vptr被设定之后才做，以免有一个virtual member function被调用；
+4. 最后，执行程序员所提供的代码。
+
+### 对象复制语意学
+
+1. 显式拒绝把一个class object指定给另一个class object的做法：**将copy assignment operator声明为private，并且不提供其定义**。把它设为private，就不允许任何地点（除了member functions及该class的friends之中）做赋值操作。不提供其函数定义，则一旦某个member function或friend企图影响一份拷贝，程序在链接时就会失败。 
+
+2.  只有在默认行为所导致的语意不安全或者不正确时，才需要设计一个copy assignment operator。 
+
+3. 一个class对于默认的copy assignment operator，在以下情况不会表现出bitwise copy语意（不表现出bitwise copy语意，则编译器生成default copy assignment operator）： 
+
+   - 当class内含一个members object，而其class有一个copy assignment operator时
+   - 当一个class的base class有一个copy assignment operator
+   - 当一个class声明了任何virtual functions时
+   - 当class继承一个virtual base class时
+
+   对于Point class，这样的赋值操作：
+
+   ```c++
+   Point a,b;
+   ……
+   a=b;
+   ```
+
+   由bitwise copy完成，把Point b拷贝到Point a，期间并没有copy assignment operator被调用。
 
 ### 析构语意学
 
+​	如果class没有定义destructor，那么只有在其内含的member object或base class拥有destructor时，编译器才会自动合成出一个destructor。一个由程序员定义的destructor被扩展的方式类似constructors被扩展的方式，只是顺序相反： 
+
+1. destructor的函数本体首先被执行；
+2. 如果class拥有member class objects，而后者拥有destructors，那么它们将以声明的相反顺序而调用；
+3. 如果object内含一个vptr，则现在被重新设定以指向适当base class之virtual table；
+4. 如果有任何直接的nonvirtual base classes拥有destructor，它们将以声明的相反顺序而调用；
+5. 如果有任何virtual base classes拥有destructor，而前面讨论的这个class是most-derived class，那么它们会以原先构造顺序的相反顺序被调用。
+
+## 第六章 执行期语意学
