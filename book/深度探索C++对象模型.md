@@ -711,3 +711,48 @@ class PVertex : public Vertex3d{...};
 5. 如果有任何virtual base classes拥有destructor，而前面讨论的这个class是most-derived class，那么它们会以原先构造顺序的相反顺序被调用。
 
 ## 第六章 执行期语意学
+
+转自：https://blog.csdn.net/ruan875417/article/details/46492281
+
+### 对象的构造和析构
+
+1. 如果一个区段或函数中有一个以上的离开点，destructor必须被放在每一个离开点之前。
+2. 一般而言object应尽可能放在使用它的那个程序区附近，这样做可以节省不必要的对象产生和销毁操作。
+3. C++程序中所有的global objects都被放置在程序的data segment中。如果global object有constructor和destructor的话，它需要静态的初始化和内存释放操作。如果不显式指定初值，object所配置的内存内容将为0。
+4. 以一个derived class的pointer或reference来存取virtual base class subobject，是一种nonconstant expression，必须在执行期方可评估求值。virtualbase class的subobject在每个derivedclass中的位置可能会变动，不能在编译时期确定。
+5. 新的C++标准要求编译单位中的static class objects必须在相应函数第一次被调用时才被构造，而且必须以构造的相反顺序销毁。由于这些objects是在需要时才被构造，因此编译时期无法预期其集合和顺序。为支持新标准，可能要对被产生出来的static local class objects保持一个执行期链表。
+
+### new和delete运算符
+
+1. 运算符new的使用由两个步骤完成：
+
+- 通过适当的new运算符函数实例，配置所需的内存
+- 将配置得来的对象设立初值
+
+```c++
+int *pi = new int(5);  
+//new运算符的两个分离步骤  
+int *pi;  
+if (pi = __new(sizeof(int)))  
+   *pi = 5;  
+```
+
+2. 运算符delete的使用由两个步骤完成：
+
+- 通过对象的析构函数将对象析构掉
+- 将配置的内存释放
+
+```c++
+if (pi != 0)  
+    __delete(pi);  
+```
+
+3. NewA[x]必须用delete []p，因为只有在[]出现时，编译器才会寻找数组的维度，否则它便假设只有单独一个object要被删除。
+4. 基类指针指向子类对象构成的数组时，因为一般说来sizeof(子类对象) > sizeof(基类对象)，当数组析构的时候，只有基类析构函数被调用，子类析构函数不会被调用，所以如果子类有特殊资源需要释放的话，肯定不能给释放掉。最好避免一个base class指针指向derived class objects所组成的数组——如果derived class object比其base大的话。
+
+## 第七章 站在对象模型的尖端
+
+转自：https://blog.csdn.net/ruan875417/article/details/46519685
+
+
+
