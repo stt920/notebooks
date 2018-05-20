@@ -127,11 +127,213 @@
 
 3. const成员函数
 
-   
+   - const修饰成员函数目的
+
+     - 让函数的权限为只读，它无法改变成员变量的值；
+     - 如果一个对象为const，它只有权力调用const函数，因为成员变量不能被改变。
+
+   - const可构成成员函数重载
+
+     即两个成员函数只是常量性不同，可以被重载。例如：
+
+     ```c++
+     class TextBlock{  
+     public:  
+         ...  
+         const char& operator[](std::size_t position) const{  
+             return text[position];  
+         }  
+         char& operator[](std::size_t position){  
+             return text[position];  
+     
+         }  
+     private:  
+         std::string text  
+     }; 
+     ```
+
+     TextBlock的operator[]可以被这么使用：
+
+     `TextBlock tb("hello");`
+
+     `std::cout<<tb[0];`               //调用non-const TextBlock::operator[]
+
+     `const TextBlock ctb("hello");`
+
+     `std::cout<<ctb[0];`               //调用const TextBlock::operator[]
+
+     但是对于以下操作会有错误：
+
+     `ctb[0]='x'`;                             //写一个const TextBlock
+
+   - mutable（可变的）
+
+     mutable（可变的）关键字可以释放掉non-static成员变量的bitwise constness约束，被mutable修饰的成员变量可能总是会被更改，即使在const成员函数内。 
+
+   - 在const和non-const成员函数中避免重复
+
+     non-const成员函数调用const成员函数是一个避免代码重复的安全做法。相反，const成员函数调用non-const成员函数是一种错误行为，因为对象有可能因此被改动。 
+
+请记住：
+
+- 将某些东西声明为const可帮助编译器侦测出错误用法。const可被施加于任何作用域的对象,函数参数,函数返回类型,成员函数本体。
+- 编译器强制实施bitwise constness,但你编写程序时应该使用"概念上的常量性"(conceptual constness)。
+- 当const和non-const成员函数有着实质等价的实现时,令non-const版本调用const版本可避免代码重复。
 
 ### 条款04：确定对象被使用前已被初始化
 
+1. 永远在使用对象之前先将它初始化。对于无任何成员的内置类型，必须手工完成。对于内置类型以外的任何东西，初始化责任落在构造函数上，确保每一个构造函数都将对象的每一个成员初始化。 
+
+2. C++规定，对象的成员变量初始化动作发生在进入构造函数本体之前，因此”在构造函数内初始化“（准确地说是赋值，不是初始化）并不是理想选择。构造函数较佳的写法是使用所谓的member intialization list（成员初始化列表）替换赋值操作。member intialization list效率较高，基于赋值版本的构造函数，首先调用dafault构造函数为成员变量设置初值，然后立刻再对它们赋予新值。default构造函数的作为因此浪费了，member intialization list的做法避免了这一问题。
+
+3. C++有着十分固定的”成员初始化次序“。
+
+   base classes更早于其derived classed被初始化，而calss的成员变量总是以其声明次序被初始化（与member intialization list中次序无关）
+
+4. 不同编译单元内定义的non-local static对象初始化次序
+
+   编译单元是指产出单一目标文件的那些源码。基本上它是单一源码文件加上其所含入的头文件。C++对于“定义于不同的编译单元内的non-localstatic对象”的初始化相对次序并无明确定义。 
+
+   ```c++
+   class FileSystem{  
+   public:  
+       ...  
+       std::size_t numDisks() const;  
+       ...  
+   };  
+   extern FileSystem tfs;  
+   ```
+
+   ```c++
+   class Directory{  
+   public:  
+       Directory(params);  
+       ...  
+   };  
+   Directory::Directory(params){  
+       ...  
+       std::size_t disks = tfs.numDisks();  
+       ...  
+   }  
+   Directory tempDir(params);  
+   ```
+
+   现在初始化次序显得很重要：除非tfs在tempDir之前被初始化，否则tempDir的构造函数会用到尚未初始化的tfs。但是上述程序无法确定初始化顺序。
+
+    为了解决上述问题，将每个non-local static对象搬到自己的专属函数内，该对象在此函数内被声明为static，此函数返回一个引用指向它所含的对象。然后用户调用这些函数，而不直接指涉这些对象。这个方法的基础在于：c++保证函数内的local static对象会在该函数被调用期间首次遇上该对象之定义式时被初始化。 
+
+   ```c++
+   class FileSystem{  
+   public:  
+       ...  
+       std::size_t numDisks() const;  
+       ...  
+   };  
+   FileSystem& tfs(){  
+       static FileSystem fs;  
+       return fs;  
+   }  
+   ```
+
+   ```c++
+   class Directory{  
+   public:  
+       Directory(params);  
+       ...  
+   };  
+   Directory::Directory(params){  
+       ...  
+       std::size_t disks = tfs().numDisks();  
+       ...  
+   }  
+   Directory& tempDir(){  
+       static Directory td;  
+       return td;  
+   }  
+   ```
+
+请记住：
+
+- 为内置对象进行手工初始化，因为C++不保证初始化它们。
+- 构造函数最好使用成员初始化列表（member intialization list），而不要在构造函数本体内使用赋值操作。初始化列表列出的成员变量，其排列次序应该和它们在类中的声明次序相同。
+- 为免除“跨编译单元之初始化次序”问题，请以local static对象替换non-local static对象。
+
 ## 第二章 构造/析构/赋值运算
 
- 
+### 条款05：了解C++默默编写并调用哪些函数
+
+1. 什么时候empty class（空类）不再是个empty class？当C++处理过它后。如果没自己的声明，编译器就会为它声明一个copy构造函数、一个copy assignment操作符和一个析构函数。如果没有声明任何构造函数，编译器也会为你声明一个default构造函数。所有这些函数都是public且inline。
+
+因此，如果写下：
+
+```c++
+class Empyt{}；
+```
+
+就好像写下这样的代码：
+
+```c++
+class Empyt{
+public:
+    Empyt(){……}
+    Empyt(const Empty& rhs){……}
+    ~Empyt(){……}   
+    Empyt& operator=(const Empyt& rhs){……}
+}；
+```
+
+2. 编译器阻止产生拷贝赋值运算符情况
+   - 类内含有reference成员。如果需要类含有reference的class支持赋值操作，必须自己定义一个拷贝赋值运算符。因为C++不允许让reference改指向不同对象。
+   - 类内含有const成员。更改const成员不合法，所以编译器不知道如何在自己生成的赋值函数里面对它们。
+   - 将拷贝赋值运算符声明为private。编译器将拒绝为其派生类生成一个拷贝赋值运算符。
+
+请记住:
+
+- 编译器可以暗自为类创建default构造函数，copy构造函数，copy assignment操作符，以及析构函数。
+
+### 条款06：不想使用编译器自动生成的函数，就该明确拒绝
+
+1. 声明为private阻止编译器自动生成的函数
+
+   ​	所有编译器产出的函数都是public。为阻止这些函数被创建出来，需自行声明，因此可以将拷贝构造函数和拷贝赋值运算符**声明为private**。藉由明确声明一个成员函数，你阻止了编译器案子创建其专属版本；而令这些函数为private，使你得以成功阻止人们调用。
+
+   ​	只声明为private的做法并不绝对安全，因为member函数和friend函数还是可能调用你的private函数。只需不去定义它们，**“将成员函数声明为private而且故意不实现它们”**。 
+
+   例子：
+
+   ```c++
+   
+   ```
+
+2. 为驳回编译器自动（暗自）提供的机能，使用像Uncopyable这样的base class也是一种做法。 
+
+   ```C++
+   class Uncopyable{  
+   public:  
+       Uncopyable();  
+       ~Uncopyable();  
+   private:  
+       Uncopyable(const Uncopyable&);  
+       Uncopyable& operator=(const Uncopyable&);  
+   };  
+   ```
+
+   为求阻止HomeForSale对象被拷贝，唯一要做的就是继承Uncopyable：
+
+   ```c++
+   
+   ```
+
+请记住:
+
+- 为驳回编译器自动（暗自）提供的机能，可将相应的成员函数声明为private并且不予实现。使用像Uncopyable这样的base class也是一种做法。
+
+### 条款07：为多态基类声明virtual析构函数
+
+ 请记住：
+
+- 带有多态性质的基类应该声明一个virtual析构函数。如果一个类带有任何virtual函数，它就应该拥有一个virtual析构函数。
+- 一个类的设计目的不是作为基类使用，或不是为了具备多态性，就不该声明virtual析构函数。  
+
+### 条款08：别让异常逃离析构函数
 
