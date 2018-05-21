@@ -287,7 +287,7 @@ public:
    - 类内含有const成员。更改const成员不合法，所以编译器不知道如何在自己生成的赋值函数里面对它们。
    - 将拷贝赋值运算符声明为private。编译器将拒绝为其派生类生成一个拷贝赋值运算符。
 
-请记住:
+**请记住:**
 
 - 编译器可以暗自为类创建default构造函数，copy构造函数，copy assignment操作符，以及析构函数。
 
@@ -302,7 +302,14 @@ public:
    例子：
 
    ```c++
-   
+   class HomeForSale{  
+   public:  
+       ...  
+   private:  
+       ...  
+       HomeForSale)(const HomeForSale&);  
+       HomeForSale& operator=(const HomeForSale&)  
+   };  
    ```
 
 2. 为驳回编译器自动（暗自）提供的机能，使用像Uncopyable这样的base class也是一种做法。 
@@ -321,19 +328,92 @@ public:
    为求阻止HomeForSale对象被拷贝，唯一要做的就是继承Uncopyable：
 
    ```c++
-   
+   class HomeForSale:private Uncopyable{  
+       ...  
+   };
    ```
 
-请记住:
+**请记住:**
 
 - 为驳回编译器自动（暗自）提供的机能，可将相应的成员函数声明为private并且不予实现。使用像Uncopyable这样的base class也是一种做法。
 
 ### 条款07：为多态基类声明virtual析构函数
 
- 请记住：
+1. 如果基类的析构函数不为虚函数，则delete一个**指向派生类对象的基类指针**将产生未定义行为。
+
+```c++
+#include <iostream.h>
+class Base 
+{ 
+public: 
+Base() { mPtr = new int; } 
+~Base() { delete mPtr; cout<<"Base::Destruction"<<endl;} 
+private: 
+  int* mPtr; 
+} ;
+
+class Derived : public Base 
+{ 
+public: 
+  Derived() { mDerived = new long; } 
+  ~Derived() { delete mDerived; cout<<"Derived::Destruction"<<endl;} 
+private: 
+  long* mDerived; 
+} ;
+
+void main() 
+{ 
+  Base* p = new Derived; //父类指针指向子类对象，指向派生类的基类指针
+  delete p; 
+}
+```
+
+输出结果只有：Base::Destruction
+
+​	以上代码会产生内存泄露，因为new出来的是Derived类资源，采用一个基类的指针来接收，析构的时候，编译器因为只是知道这个指针是基类的，所以只将基类部分的内存析构了，而不会析构子类的，就造成了内存泄露，如果将基类的析构函数改成虚函数，就可以避免这种情况，因为虚函数是后绑定，其实就是在虚函数列表中，析构函数将基类的析构函数用实际对象的一组析构函数替换掉了，也就是先执行子类的虚函数再执行父类的虚函数，这样子类的内存析构了，父类的内存也释放了，就不会产生内存泄露。
+
+2. 任何类只要带有virtual函数都几乎确定应该也有一个virtual析构函数。如果一个类不含virtual函数，通常表示它并不意图被用做一个基类，当类不企图被当做基类的时候，令其析构函数为virtual往往是个馊主意。因为实现virtual函数，需要额外的开销（指向虚函数表的指针vptr）。 
+
+ **请记住：**
 
 - 带有多态性质的基类应该声明一个virtual析构函数。如果一个类带有任何virtual函数，它就应该拥有一个virtual析构函数。
 - 一个类的设计目的不是作为基类使用，或不是为了具备多态性，就不该声明virtual析构函数。  
 
 ### 条款08：别让异常逃离析构函数
+
+1. C++并不禁止析构函数吐出异常，但它不鼓励你这样做。因为在析构函数中吐出异常可能会使程序过早结束或出现不明确行为。
+
+2.  析构函数发生异常解决办法：
+
+   - 如果抛出异常，就结束程序。通常通过调用abort完成。  
+
+   ```c++
+   DBConn::~DBConn(){  
+       try{ db.close(); }  
+       catch(…){  
+           //制作运转记录，记下对close的调用失败;  
+           std::abort();  
+       }  
+   }  
+   ```
+
+   - 吞下因调用close而发生的异常。 
+
+   ```c++
+   DBConn::~DBConn(){  
+       try{ db.close(); }  
+       catch(…){  
+           //制作运转记录，记下对close的调用失败;  
+       }  
+   }  
+   ```
+
+3. 如果某个操作可能在失败时抛出异常，而又存在某种需要必须处理该异常，那么这个异常必须来自析构函数以外的某个函数。 
+
+**请记住：**
+
+- 析构函数绝对不要吐出异常。如果一个被析构函数调用的函数可能抛出异常，析构函数应该捕捉任何异常，然后吞下它们（不传播）或结束程序。
+- 如果客户需要对某个操作函数运行期间抛出的异常做出反应，那么类应该提供一个普通函数（而非在析构函数中）执行该操作。
+
+### 条款09：决不在构造和析构过程中调用virtual函数
 
