@@ -417,3 +417,171 @@ void main()
 
 ### 条款09：决不在构造和析构过程中调用virtual函数
 
+​	本条款重点：你不应该在构造函数和析构函数期间调用virtual函数，因为这样的调用不会带来你预想的效果。如下例，假如有个class继承体系，用来塑造股票交易如买进、卖出的订单等等，这样的交易一定要经过审计，所以每当创建一个交易对象，在审计日志中也需要创建一笔适当的记录:
+
+```c++
+class Transaction{                                //所有交易的base class
+pubilc:
+    Transaction();    
+    virtual void logTransaction() const=0;        //做出一份因类型不同而不同的日志
+}；
+Transaction::Transaction                          //base class构造函数实现
+{
+	...
+	logTransaction();                            //最后动作是志记这笔交易
+}
+
+class BuyTransaction:public Transaction{          //drive class
+public:
+	virtual void logTransaction() const;          //志记此类型交易
+}
+class SellTransaction:public Transaction{          //drive class
+public:
+	virtual void logTransaction() const;          //志记此类型交易
+}
+```
+
+当执行以下操作：
+
+```c++
+BuyTransaction b;
+```
+
+首先会调用Transaction构造函数（derived class对象内的base class成分会在derived class自身成分构造之前先构造妥当），这是调用的logTransaction是Transaction内的版本，不是BuyTransaction内的版本，而目前即将建立的对象类型是BuyTransaction版本。**即derived class在构造函数中调用的virtual函数是基类版本而不是derived class的版本** 。Bases class构造期间virtual函数绝不会下降到derived classes阶层。取而代之的是，对象的作为就像隶属base类型一样。非正式说法：在base class构造期间，virtual函数不是virtual函数。
+
+原因：由于base class构造函数执行更早于derived class构造函数，当base class构造函数执行时derived class的成员变量尚未初始化。如果此期间调用virtual函数下降至derived classes阶层，derived class的函数几乎必然取用local成员变量，而那些成员变量尚未初始化。所以C++不会走这条路。
+
+**请记住**：
+
+- 在构造函数和析构期间不要调用虚函数，因为这类调用从不下降至derived class（比起当前执行构造函数和析构函数的那层）。
+
+### 条款10：令operator=返回一个reference to *this
+
+对于赋值操作符，我们常常要达到这种类似效果，即连续赋值：  
+
+```c++
+int x, y, z;  
+x = y = z = 15;  
+```
+
+为了实现“连锁赋值”，赋值操作符必须返回一个“引用”指向操作符的左侧实参。
+
+```c++
+class Widget{
+public:
+	...
+	Widget& operator=(const Widget& rhs)
+	{
+		...
+		return *this;
+	}
+	...
+}
+```
+
+这个协议不仅适用于以上标准赋值形式，也适用于所有相关运算，如+=，-=，*=。
+
+**请记住** ：
+
+- 令赋值操作符返回一个reference to *this。
+
+### 条款11：在operator=中处理“自我赋值”
+
+“自我赋值”指对象被赋值给自己。 
+
+```c++
+class Widget{ ... };  
+Widget w;  
+...  
+w = w;//自我赋值  
+  
+a[i] = a[j]; //如果i等于j，这个就是自我赋值  
+  
+*px=*py //当px和py指向同一个对象时，就是自我赋值  
+  
+class Base{ ... };  
+class Derived:public Base{ ... };  
+void doSomething(const Base& rb,Derived* pd) //rb和*pd有可能是同一对象  
+
+```
+
+"自我赋值"带来的风险：可能“在停止使用资源之前意外释放了它”；
+
+下面operator=实现代码，表面上看起来合理，但自我赋值出现并不安全：
+
+```c++
+class Bitmap{ ..... };  
+class Wdiget{  
+public:  
+    ...  
+    Wdiget& operator=(const Wdiget& rhs){  
+        delete pb;  
+        pb = new Bitmap(*rhs.pb);  
+        return *this;  
+    }  
+private:  
+    Bitmap* pb;  
+};  
+```
+
+这里自我赋值问题是，operator=函数内的*this（赋值目的端）和rhs有可能是同一对象。果真如此delete就不只是销毁当前对象的bitmap，它也销毁rhs的bitmap。
+
+为解决这种错误，传统做法是藉由operator=最前面的一个“证同测试”达到“自我赋值”的检验目的
+
+```c++
+Wdiget& operator=(const Wdiget& rhs){  
+    if (&rhs == this) return *this;  
+    delete pb;  
+    pb = new Bitmap(*rhs.pb);  
+    return *this;  
+}  
+```
+
+这样做可行，但如果在new Bitmap的时候出现异常，Widget最终会持有一个指针指向一块被删除的Bitmap，这样的指针有害。下面是另外的一种解决办法： 
+
+```c++
+Wdiget& Wdiget::operator=(const Wdiget& rhs){  
+    Bitmap* pOrig = pb;  
+    pb = new Bitmap(*rhs.pb);  
+    delete pOrig;  
+    return *this;  
+};  
+```
+
+这样当如果new Bitmap出现异常，pb保持原状。
+
+**请记住**：
+
+- 确保当对象进行自我赋值的时候有良好的行为，其中包括来源对象和目标对象的比较，设计良好的赋值顺序，以及copy and swap技术。
+- 要确保当一个函数操作对个对象，并且多个对象可能是同一个对象的时候行为也是准确的。
+
+### 条款12：复制对象时勿忘其每一个成分
+
+1. 当你拒绝编译器为你写出copying函数，如果你的代码不完全，编译器也不会告诉你。如果你为类添加一个成员变量，你必须同时修改copying函数（所有的构造函数，拷贝构造函数以及拷贝赋值操作符）。 
+2. **在派生类的构造函数，拷贝构造函数和拷贝赋值操作符中应当显示调用基类相对应的函数**。
+3. 当你编写一个copying函数，请确保：（1）复制所有local成员变量，（2）调用所有基类内的适当copying函数。
+
+```c++
+PriorityCustomer::PriorityCustomer(const PriorityCustomer& rhs)
+  : Customer(rhs) ,                                //调用base class的拷贝构造函数
+    priority(rhs.priority)
+{}；
+PriorityCustomer&
+PriorityCustomer::operator=(const PriorityCustomer& rhs)
+{
+    Customer::operator=(rhs);               //对base class成分进行赋值操作
+    priority=rhs.priority;
+    return *this;
+}
+```
+
+但是，我们不该令拷贝赋值操作符调用拷贝构造函数，也不该令拷贝构造函数调用拷贝赋值操作符。
+
+**请记住**：
+
+- Copying函数应该确保复制“对象内的所有成员变量”及“所有基类成分”；
+- 不要尝试以某个copying函数实现另一个copying函数。应该将共同机能放进第三个函数中，并由两个copying函数共同调用。  
+
+## 第三章 资源管理
+
+### 条款13：以对象管理资源
