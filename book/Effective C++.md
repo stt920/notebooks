@@ -747,7 +747,8 @@ processWidget(std::tr1::shared_ptr<widget> pw(new widget), priority());
 避免这类问题办法很简单：使用分离语句：
 
 ```c++
-
+std::tr1::shared_ptr<Widget> pw(new Widget);    //在单独语句内以智能指存储newd所得对象  
+processWidget(pw, priority()); //这个调用动作绝不至于造成泄漏  
 ```
 
 请记住：
