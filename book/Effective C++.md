@@ -27,7 +27,7 @@
    #define ASPECT_RATIO 1.653
    ```
 
-   ​	几号名称ASPECT_RATIO也许从未被编译器看见；也许编译器开始处理源码之前它就被预处理器移走了。于是记号名称ASPECT_RATIO有可能没进入记号表内。于是当你运用此常量获得一个编译错误信息时，可能会带来困惑，因为编译错误信息可能会提到1.653而不是ASPECT_RATIO。
+   ​	记号名称ASPECT_RATIO也许从未被编译器看见；也许编译器开始处理源码之前它就被预处理器移走了。于是记号名称ASPECT_RATIO有可能没进入记号表内。于是当你运用此常量获得一个编译错误信息时，可能会带来困惑，因为编译错误信息可能会提到1.653而不是ASPECT_RATIO。
 
    ​	解决方法可以是以一个常量替换上述宏（#define）：
 
@@ -35,7 +35,7 @@
    const double AspectRatio=16.53
    ```
 
-   ​	好处有如下几点：a、语言常量肯定会被编译器看到，会进入符号表内。b、使用常量可能比使用#define导致较小量的码，因为预处理器盲目的将宏名称替换会导致目标码出现多份替换后的内容。 
+   ​	好处有如下几点：a、语言常量肯定会被编译器看到，会进入符号表内。b、使用常量可能比使用#define导致较小量的码，因为预处理器盲目地将宏名称替换会导致目标码出现多份替换后的内容。 
 
    ​	常量替换#defines要注意两种特殊情况：a、常量指针的定义，如：const char * const authorName =“Scott Meyers”。b、class专属常量，即一个static const member，要在实现文件中定义它。 
 
@@ -89,7 +89,7 @@
    }  
    ```
 
-   ​	有了consts、enums和inlines，我们对预处理器的需求降低了，但不能完全消除。#include仍然是必需品，比如#ifdef/#ifndef页继续扮演者控制编译的重要角色。目前还不到预处理器全面退隐的时候。
+   ​	有了consts、enums和inlines，我们对预处理器的需求降低了，但不能完全消除。#include仍然是必需品，比如#ifdef/#ifndef页继续扮演着控制编译的重要角色。目前还不到预处理器全面退隐的时候。
 
 请记住：
 
@@ -295,7 +295,7 @@ public:
 
 1. 声明为private阻止编译器自动生成的函数
 
-   ​	所有编译器产出的函数都是public。为阻止这些函数被创建出来，需自行声明，因此可以将拷贝构造函数和拷贝赋值运算符**声明为private**。藉由明确声明一个成员函数，你阻止了编译器案子创建其专属版本；而令这些函数为private，使你得以成功阻止人们调用。
+   ​	所有编译器产出的函数都是public。为阻止这些函数被创建出来，需自行声明，因此可以将拷贝构造函数和拷贝赋值运算符**声明为private**。藉由明确声明一个成员函数，你阻止了编译器暗自创建其专属版本；而令这些函数为private，使你得以成功阻止人们调用。
 
    ​	只声明为private的做法并不绝对安全，因为member函数和friend函数还是可能调用你的private函数。只需不去定义它们，**“将成员函数声明为private而且故意不实现它们”**。 
 
@@ -585,3 +585,173 @@ PriorityCustomer::operator=(const PriorityCustomer& rhs)
 ## 第三章 资源管理
 
 ### 条款13：以对象管理资源
+
+假设我们使用一个用来塑模投资行为的程序库，其中各式各样的投资类型继承自一个root class Investment：
+
+```c++
+class Investment{……}；
+```
+
+进一步假设，这个程序库通过一个工厂函数供应我们某特定Investment对象：
+
+```c++
+Investment* createInvestment();
+```
+
+createInvestment的调用端使用了函数返回的对象后，有责任删除之。现在考虑有个f函数履行这个职责：
+
+```c++
+void f()
+{
+	Investment* pInv=createInvestment();
+    ...
+    delete pInv;
+}
+```
+
+上述f中在若干情况下可能无法删除它得自createInvestment的投资对象，因为“...”区块可能导致过早退出，并没有执行delete，比如return、continue、goto或者异常等情况，因此会产生潜在的内存泄漏风险。
+
+为确保createInvestment返回的资源总是被释放，我们需要将资源对象放进对象内，当控制流离开f，该对象的析构函数会自动释放那些资源。例如以下，使用标准库auto_ptr只能指针，其析构函数自动对其所指对象调用delete，从而避免内存泄漏：
+
+```c++
+void f()
+{
+    std::auto_ptr<Investment> pInv(createInvestment());
+}
+```
+
+这个例子示范“以对象管理资源”的两个关键想法：
+
+- 获得资源后立即放进管理对象内；
+- 管理对象运用析构函数确保资源被释放；
+
+由于auto_ptr被销毁时会自动删除它所指之物，所以不能让多个auto_ptr同时指向同一对象。所以auto_ptr若通过拷贝构造函数或拷贝赋值操作符复制它们，它们会变成NULL，而复制所得的指针将取得资源的唯一拥有权。
+
+auto_ptr的替代方案是“引用计数型智能指针”（reference-counting smart pointer；RCSP），它可以持续跟踪共有多少对象指向某笔资源，并在无人指向它时自动删除该资源。TR1的tr1::shared_ptr就是一个"引用计数型智能指针"。 
+
+auto_ptr和tr1::shared_ptr都在其析构函数内做delete而不是delete[]，也就意味着在动态分配而得的数组身上使用auto_ptr或tr1::shared_ptr会使资源得不到释放。 
+
+请记住： 
+
+- 为防止资源泄漏，请使用RAII（Resource Acquisitoin Is Initialization,资源取得实际便是初始化时机）对象，它们在构造函数中获得资源并在析构函数中释放资源。
+- 两个常被使用的RAII类分别是tr1::shared_ptr和auto_ptr。前者通常是较佳选择，因为其copy行为比较直观。若选择auto_ptr，复制动作会使他（被复制物）指向NULL。
+
+### 条款14：在资源管理类中小心copying行为
+
+当一个RAII对象被赋值时，会发生声明事情？
+
+- 禁止复制
+- 对底层资源祭出“引用计数法”
+- 复制底部资源（深度拷贝）
+- 转移底部资源的拥有权
+
+请记住：
+
+- 复制RAII对象必须一并复制它所管理的资源，所以资源的copying行为决定RAII对象的行为。
+- 普遍而常见的RAII类的copying行为是：禁止copying，施行引用计数法。不过其他行为也都可能被实现。
+
+### 条款15：在资源管理类中提供对原始资源的访问
+
+1. 许多APIs直接指涉资源，需要直接访问原始资源。这时候需要一个函数可将RAII对象（如tr1::shared_ptr）转换为其所内含之原始资源。有两种做法可以达成目标：显示转换和隐式转换。
+2. tr1::shared_ptr和auto_ptr都提供一个get成员函数，用来执行显示转换，也就是返回智能指针内部的原始指针（的复件）。就像所有智能指针一样， tr1::shared_ptr和auto_ptr也重载了指针取值操作符（operator->和operator*），它们允许隐式转换至底部原始指针。
+
+**显式转换： **
+
+条款13导入一个观念，使用智能指针入auto_ptr或tr1::shared_ptr保持factory函数如createInvestement的调用结果：
+
+```c++
+std::tr1::shared_ptr<Investment> pInv(createInvestment());
+```
+
+假如希望以某个函数处理Investment对象，像这样：
+
+```c++
+int dayHeld(const Investment* pi);
+```
+
+你想这么调用它：
+
+```c++
+int days=dayHeld(pInv);    //错误
+```
+
+通不过编译，因为dayHeld需要的是Investment*指针，传给它的却是个类型为`tr1::shared_ptr<Investment> `的对象。
+
+auto_ptr和tr1::shared_ptr都提供一个get成员函数，用来执行显式转换，也就是它会返回智能指针内部的原始指针（的复件）。同时它们也重载了指针取值操作符（operator->和operator*），允许隐式转换至底部原始指针。
+
+**隐式转换： **
+
+```c++
+class Font{  
+public:  
+    explicit Font(FontHandle fn) :f(fn){}  
+    ....  
+    FontHandle get() const{  
+        return f;  
+    }  
+    operator FontHandle() const{         //隐式转换  
+        return f;  
+    }  
+    ...  
+    ~Font(){ realseFont(f); }  
+private:  
+    FontHandle f;  
+};  
+```
+
+请记住：
+
+- APIs往往需要取得RAII的原始资源，所以每一个RAIIclass应该提供一个“取得其所管理之资源”的方法。
+- 对原始资源的访问可能经由显示转换或隐式转换。一般而言显示转换比较安全，但隐式转换对客户比较方便。
+
+### 条款16：成对使用new和delete时采取相同形式
+
+1. 当你使用new动态生成一个对象，有两件事发生：第一，内存被分配。第二，针对此内存会有一个(或更多)构造函数被调用。当你使用delete，也有两件事发生：针对此内存会有一个(或更多)析构函数被调用，然后内存被释放。
+2. 单一对象的内存布局一般而言不同于数组的内存布局。数组所用的内存通常还包括“数组大小“的记录，以便delete知道需要调用多少次析构函数。
+
+```c++
+string* stringpPtr1=new std::string;
+string* stringpPtr2=new std::string[100];
+...
+delete stringpPtr1;
+delete [] stringpPtr2;
+```
+
+3. 尽量不要对数组形式做typedef动作。
+
+请记住：
+
+- 如果你在new表达式中使用[]，必须在相应的delete表达式中也使用[]。如果你在new表达式中不使用[]，一定不要在相应的delete表达式中使用[]。 
+
+### 条款17：以独立语句将newed对象置入智能指针
+
+```c++
+int priority();  
+void processWidget(std::tr1::shared_ptr<Widget> pw, int priority); 
+```
+
+采用如下形式调用processWidget
+
+```c++
+processWidget(std::tr1::shared_ptr<widget> pw(new widget), priority());  
+```
+
+虽然在此使用“对象管理式资源”，上述调用可能出现资源泄露。因为在函数中，参数的调用顺序会因为编译器的不同而不同，例如上面的顺序可能是：
+
+1. 执行”new widget”
+2. 调用priority
+3. 调用tr1::shared_ptr构造函数
+
+这样可能出现的问题就是当new widget成功后，如果priority()函数调用导致异常，new widget返回的指针将会遗失，因为new widget未能放入到智能指针中，导致内存泄漏。 
+
+避免这类问题办法很简单：使用分离语句：
+
+```c++
+
+```
+
+请记住：
+
+- 以独立语句将newed对象存储于（置入）智能指针内。如果不这样做，一旦异常抛出，有可能导致难以察觉的资源泄漏。   
+
+## 第四章 设计与声明

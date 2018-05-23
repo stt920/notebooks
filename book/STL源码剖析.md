@@ -27,7 +27,7 @@ Container通过Allocator取得数据储存空间，Algorithm通过Iterator存取
 
 #### SGI特殊的空间配置器，std::alloc
 
-​	allocator只是基层内存配置/释放行为（也就是::operator new和::operator delete）的一层薄薄包装，并额米有考虑到任何效率上的强化。
+​	allocator只是基层内存配置/释放行为（也就是::operator new和::operator delete）的一层薄薄包装，并没有考虑到任何效率上的强化。
 
 一般而言，我们所习惯的C++内存配置操作和释放操作是这样的：
 
@@ -66,7 +66,7 @@ inline void destroy(T* pointer) {
     pointer->~T();  
 }  
 
-//destory()第二版本，接收两个迭代器。此函数没法找出元素数值型别
+//destory()第二版本，接受两个迭代器。此函数没法找出元素数值型别
 template <class ForwardIterator>  
 inline void destroy(ForwardIterator first, ForwardIterator last) {  
   __destroy(first, last, value_type(first));  
@@ -74,11 +74,11 @@ inline void destroy(ForwardIterator first, ForwardIterator last) {
 
 ```
 
-​	上述destro()的第一版本接受接受一个指针，将该指针所指的对象析构掉。第二版本接受first和last两个迭代器，将这两个迭代器范围内的对象析构掉。在第二版本中运用了traits编程技法，traits会得到当前对象的一些特性，再根据特性的不同分别对不同特性的对象调用相应的方法。在第二版本中，STL会分析迭代器所指对象的has_trivial_destructor特性的类型（只有两种：true_type和false_type），如果是true_type，STL就什么都不做；如果是false_type，就会调用每个对象的析构函数来销毁这组对象。 
+​	上述destroy()的第一版本接受一个指针，将该指针所指的对象析构掉。第二版本接受first和last两个迭代器，将这两个迭代器范围内的对象析构掉。在第二版本中运用了traits编程技法，traits会得到当前对象的一些特性，再根据特性的不同分别对不同特性的对象调用相应的方法。在第二版本中，STL会分析迭代器所指对象的has_trivial_destructor特性的类型（只有两种：true_type和false_type），如果是true_type，STL就什么都不做；如果是false_type，就会调用每个对象的析构函数来销毁这组对象。 
 
 #### 空间配置与释放，std::alloc
 
-​	C++内存配置基本操作是::operator new()，内存释放基本操作是::operator delete()。这两个全局函数相当于C的malloc()和free()函数。正式如此，SGI以malloc和free完成内存的分配和释放。
+​	C++内存配置基本操作是::operator new()，内存释放基本操作是::operator delete()。这两个全局函数相当于C的malloc()和free()函数。正是如此，SGI以malloc和free完成内存的分配和释放。
 
 ​	考虑到小型区块可能造成的内存破碎问题，SGI设计了双层配置器，**第一级配置器直接使用malloc()和free()，第二级配置器采取以下策略：当配置区块超过128bytes时，调用第一级配置器；当配置区块小于128bytes时，采用内存池方式。 ** 
 
