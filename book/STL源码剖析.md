@@ -167,35 +167,277 @@ union obj
 
 ## 第三章 迭代器(iterators)概念与traits编程技法
 
+### 迭代器设计思维——STL关键所在
+
+STL的中心思想在于：将数据容器（containters）和算法（algorithms）分开，彼此独立设计，最后再以一帖胶着剂撮合在一起。
+
+### 迭代器是一种smart pointer
+
+迭代器是一种行为类似指针的对象，而指针的各种行为中最常见也最方便的便是内容提领（dereference）和成员访问（member access），因此，迭代器最重要的编程工作就是对operator* 和operator-> 进行重载工作。
+
+### [Traits编程技法——STL源代码门钥](https://www.cnblogs.com/mangoyuan/p/6446046.html)
+
+traits，又被叫做特性萃取技术，说得简单点就是提取“被传进的对象”对应的返回类型，让同一个接口实现对应的功能。因为STL的算法和容器是分离的，两者通过迭代器链接。算法的实现并不知道自己被传进来什么。萃取器相当于在接口和实现之间加一层封装，来隐藏一些细节并协助调用合适的方法，这需要一些技巧（例如，偏特化）。 
+
+首先，在算法中运用迭代器时，很可能会用到其相应型别（迭代器所指之物的型别）。假设算法中有必要声明一个变量，以“迭代器所指对象的型别”为型别，该怎么办呢？
+
+解决方法是：利用function template的参数推导机制。
+
+```c++
+template <class I, class T>
+void func_impl(I iter, T t) {
+        T tmp; // 这里就是迭代器所指物的类型新建的对象
+        // ... 功能实现
+}
+
+template <class I>
+inline
+void func(I iter) {
+        func_impl(iter, *iter); // 传入iter和iter所指的值，class自动推导
+}
+
+int main() {
+    int i;
+    func(&i);
+}
+```
+
+我们以func()对外接口，却把实际操作全部置于func_imp1()之中。由于func_imp1()是一个function template，一旦被调用，编译器会自动进行template参数推到。于是导出型别T，顺利解决问题。
+
+迭代器相应型别不只是“迭代器所指对象的型别”一种而已。根据经验，最常用的相应型别有五种，然而并非任何情况下任何一种都可以利用上述的template参数推导机制来取得。
+
+函数的“template参数推导机制”推导的只是参数，无法推导函数的返回值类型。万一需要推导函数的传回值，就无能为力了。
+
+声明内嵌型别似乎是个好主意，这样我们就可以直接获取。  
+
+```c++
+template <class T>
+struct MyIter {
+    typedef T value_type; // 内嵌型别声明
+    // ...
+};
+
+template <class I>
+typename I::value_type //这一行是func的回返值型别
+func(I ite) {
+    return *ite;
+}
+
+// ...
+MyIter<int> ite(new int(8));
+cout << func(ite);
+```
+
+ 并不是所有迭代器都是class type，原生指针就不是。如果不是class type，就无法定义它内嵌型别。但STL绝对必须接受原生指针作为一种迭代器。template partial specialization 可以做到。
+
+Partial Specialization (偏特化)意义：如果class template拥有一个以上的template参数，我们可以针对其中某个（或数个，但非全部）template参数进行特化工作。换句话说，我们可以在泛化设计中提供一个特化版本（也就是将泛化版本中的某些template参数赋予明确的指定）。
+
+《泛型思维》对Partial Specialization 定义：针对（任何）template参数更进一步的条件限制所设计出来的一个特化版本。由此，面对以下这么一个class template：
+
+```c++
+template<typename T>
+class C {……};  //这个泛化版本允许（接受）T为任何型别
+
+//我们更容易接受它有一个形如下的Partial Specialization 
+template<typename T>
+class C<T*> {……};  //这个泛化版本仅适用于"T为原生指针"的情况，便是"T为任何型别"的一个更进一步的条件限制
+```
+
+关键地带！下面这个class template专门用来萃取迭代器的特性，而value type正是迭代器的特性之一：
+
+```c++
+template <class I>
+struct iterator_traits {
+     typedef typename I::value_type value_type;
+};
+
+template <class I>
+struct iterator_traits<T*> {
+    typedef T value_type;
+};
+
+template <class I> typename iterator_traits<I>::value_type
+  func(I ite) {
+     return *ite;
+}
+```
+
+func在调用 I 的时候，首先把 I 传到萃取器中，然后萃取器就匹配最适合的 value_type。（萃取器会先匹配最特别的版本）这样当你传进一个原生指针的时候，首先匹配的是带<T*>的偏特化版本，这样 value_type 就是 T，而不是没有事先声明的 I::value_type。这样返回值就可以使用 `typename iterator_traits<I>::value_type ` 来知道返回类型。
+
+![3-1](./stl/3-1.png)
 
 
 
+## 第四章 序列式容器（sequence containers）
+
+### vector
+
+#### vector概述
+
+vector的数据安排以及操作方式，与array非常相似。两者的唯一差别在于空间的运用的灵活性。array是静态空间，一旦配置了就不能改变；vector的**动态空间** ，随着元素的加入，它的内部机制会自行扩充空间以容纳新元素。vector的实现技术，关键在于对其大小的控制以及重新配置时的数据移动效率。
+
+#### vector迭代器
+
+vector维护的是一个连续线性空间，所以不论其元素型别为何，普通指针都可以作为vector的迭代器而满足所有必要条件，因为vector迭代器所需要的操作，如operator*、operator->、operater++、operater--、operator-、operator+、operator+=、operator-=，普通指针天生就具备。vecotr支持随机存取，而普通指针正有这样的能力，所以，vecotr提供的是Random Access Iterators。
+
+```c++
+template<class T, class Alloc = alloc>  
+class vector{  
+public:  
+    typedef T   value_type;  
+    typedef value_type* iterator;//vector的迭代器是普通指针  
+    ...  
+};
+```
+
+根据定义，如果客户端写出这样的代码：
+
+```c++
+vector<int>::iterator ivite;
+vector<Shap>::iterator svite;
+```
+
+ivite的型别其实就是`int*`，svite的型别其实就是` Shape *`。
+
+#### vector数据结构
+
+vector采用**线性连续空间**的数据结构。它以两个迭代器start和finish分别指向配置的来的连续空间中目前已被使用的范围，并以迭代器end_of_storage指向整块连续空间（含备用空间）的尾端:
+
+```c++
+template<class T,class Alloc = alloc>  
+class vector{  
+...  
+protected :  
+    iterator start ; //表示目前使用空间的头  
+    iterator finish ; // 表示目前使用空间的尾  
+    iterator end_of_storage ; //表示目前可用空间的尾  
+};
+```
+
+为了降低空间配置时的速度成本，vector实际配置的大小可能比客户需求量大一些，以备将来可能的扩展。这便是容量（capacity）的观念。
+
+```c++
+template<class T, class Alloc = alloc>  
+class vector{
+...
+public:
+	iterator begin() {return start;}
+	iterator end() {return finish;}
+	size_type size() const {return size_type(end()-begin());}
+    size_type capacity const{
+    	return size_type(end_of_storage-begin());
+    }
+    bool empty const{return begin()==end();}
+    reference operator[](size_type n){return *(begin()+n);}
+    
+    reference front(){return *begin();}
+    reference back(){return *(end()-1);}
+...
+}
+```
+
+![4-2](./stl/4-2.png)
+
+#### vector构造与内存管理
+
+vector缺省使用alloc作为空间配置器，并据此另外定义了一个data_allocator，为的是更方便以元素大小为配置单位：
+
+```c++
+template<class T, class Alloc = alloc>  
+class vector{
+protected:
+	typedef simple_alloc<value_type,Alloc> data_allocator;
+...
+}
+```
+
+于是，data_allocator::allocate(n)表示配置n个元素空间。
+
+当我们以push_back()将新元素插入vector尾端时，该函数先检查是否还有备用空间，如果有就直接在备用空间上构造元素，并调整迭代器finish，使vector变大。不过没有备用空间，就扩充空间（重新配置、移动数据、释放原空间）：
+
+```c++
+template<class T, class Alloc>  
+void vector<T, Alloc>::insert_aux(iterator position, const T&x){  
+    if (finish != end_of_storage){//还有备用空间  
+        construct(finish, *(finish - 1)); //在备用空间起始处构造一个元素，以vector最后一个元素值为其初值  
+        ++finish; //调整finish迭代器  
+        T x_copy = x;  
+        copy_backward(position, finish - 2, finish - 1);  
+        *position = x_copy;  
+    }  
+    else{//没有备用空间  
+        const size_type old_size = size();  
+        const size_type new_size = old_size != 0 ? 2 * old_size : 1;  
+        iterator new_start = data_allocator::allocate(new_size);  
+        iterator new_finish = new_start;  
+        try{  
+            new_finish = uninitialized_copy(start, position, new_start);//将原vector的内容拷贝到新vector  
+            construct(new_finish, x);  
+            ++new_finish;  
+            new_finish = uninitialzed_copy(position, finish, new_finish);//将安插点的原内容也拷贝过来  
+        }  
+        catch (excetion e){  
+            destroy(new_start, new_finish);//如果发生异常，析构移动的元素，释放新空间  
+            data_allocator::deallocate(new_start, new_size);  
+        }//析构并释放原空间  
+        destroy(begin(), end());  
+        deallocator();  
+        start = new_start; //调整迭代器  
+        finish = new_finish;  
+        end_of_storage = new_start + new_size;//调整迭代器  
+    }  
+}  
+```
+
+所谓动态增加大小，并不是在原空间之后接续空间（因为无法包装原空间之后尚有可配置的空间），而是以**原大小的两倍另外配置一块较大的空间**，然后将原来内容拷贝过来，然后才开始在原内容之后构造新元素，并释放原空间。因此对vector的任何操作，一旦引起空间重新配置，指向原vector的所有**迭代器就都失效**了。
+
+#### vector元素操作
+
+**pop_back()实现**
+
+```c++
+void pop_back(){
+    --finish;            //将尾端标记往前移一格，表示放弃尾端元素
+    destory(finish);
+}
+```
+
+**erase()实现**
+
+```c++
+//清除[first,last]中的所有元素
+iterator erase(iterator first,iterator last){
+    iterator i=copy(last,finish,first);
+    destroy(i,finish);
+    finish=finish-(last-first);
+}
+//清除某个位置上的元素
+iterator erase(iterator position){
+    if(position+1!=end())
+        copoy(position+1,finish,position);
+    --finish;
+    destory(finish);
+    return position;
+}
+//清除所有元素
+void claar() {erase(begin(),end());}
+```
+
+![4-3a](./stl/4-3a.png)
 
 
 
+**insert()实现**
+
+![4-3b1](./stl/4-3b1.png)
+
+![4-3b2](./stl/4-3b2.png)
 
 
 
+![4-3b3](./stl/4-3b3.png)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### list
 
 
 
