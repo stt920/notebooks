@@ -472,7 +472,54 @@ list有一个重要性质：插入操作（insert）和接合操作（splice）�
 以下是list迭代器的设计：
 
 ```c++
+template<class T,class Ref，class Ptr>
+struct _list_iterator{
+	typedef _list_iterator<T,T&,T*> iterator;
+	typedef _list_iterator<T,T&,T*> iterator;
 
+	typedef bidirectional_iterator_tag iterator_category;
+	typedef T value_type;
+	typedef Ptr pointer;
+	typedef Ref reference;
+	typedef _list_node<T>* link_type;
+	typedef size_t size_type;
+	typedef ptrdiff_t difference_type;
+	
+	link_type node;//迭代器内部需要一个普通指针，指向list节点
+	
+	//constructor
+	_list_iterator(link_type x):node(x){}
+	_list_iterator(){}
+	_list_iterator(const iterator& x):node(x.node){}
+	
+	bool operator==(const self& x) const {return node==x.node;}
+	bool operator!=(const self& x) const {return node!=x.node;}
+	//以下对迭代器取值，取的是节点的数据值
+	reference operator*() const {return (*node).data;}
+	//以下是迭代器的成员存取运算子的标准做法
+	reference operator->() const {return &(operator*());}
+	
+	//对迭代器累加1
+    self& operator++(){
+    	node=(link_type)((*node).next);
+    	return *this;
+    }
+    self operator++(int){
+    	self tmp=*this;
+    	++*this;
+    	return tmp;
+    }
+    //对迭代器累减1
+    self& operator--(){
+    	node=(link_type)((*node).prev);
+    	return *this;
+    }
+    self operator--(int){
+    	self tmp=*this;
+    	--*this;
+    	return tmp;
+    }
+}
 ```
 
 
