@@ -439,5 +439,45 @@ void claar() {erase(begin(),end());}
 
 ### list
 
+#### list概述
+
+list是双向链表 ，相比于vector的连续线性空间，list就显得复杂许多，她的好处是每次插入或删除一个元素，就配置或释放一个元素空间 。list对空间的运用绝对的精准，一点儿也不浪费。而且，对任何位置的元素插入或元素移除，list永远是常数时间。
+
+#### list的节点
+
+list本身和list节点是不同的结构，需要分开设计。以下是STL list的节点结构：
+
+```c++
+template <class T>  
+struct __list_node {  
+  typedef void* void_pointer;  
+  void_pointer next;  
+  void_pointer prev;  
+  T data;  
+};  
+```
+
+显然是一个双向链表。
+
+#### list的迭代器
+
+list不能够像vector一样以普通指针作为迭代器，因为其节点不能保证在存储空间中连续存在。list迭代器必须有能力指向list的节点，并有能力进行递增、递减、取值、成员存取等操作。
+
+由于STL list是一个双向链表，迭代器必须具备前移、后移的能力，所以list提供的是Bidirectional Iterators 。
+
+list有一个重要性质：插入操作（insert）和接合操作（splice）都不会造成list迭代器失效。这在vector是不成立的，因为vector的插入操作可能造成记忆体重新配置，导致原有迭代器全部失效。甚至list的元素删除操作，也只有”指向被删除元素“的那个迭代器失效，其他迭代器不受任何影响。
+
+![4-4](./stl/4-4.png)
+
+以下是list迭代器的设计：
+
+```c++
+
+```
+
+
+
+### slist
+
 
 
