@@ -222,7 +222,7 @@ TRUNCATE TABLE#速度比delete更快
 
 ```mysql
 #创建表
-CREAT TABLE customers
+CREATE TABLE customers
 （
 	cust_id		  int 	   NOT NULL	 AUTO_INCREMENT,
 	cust_name	  char(50) NOT NULL,
@@ -236,7 +236,7 @@ CREAT TABLE customers
 
 ```mysql
 #DEFAULT 指定默认值
-CREAT TABLE customers
+CREATE TABLE customers
 （
 	cust_id		  int 	   NOT NULL	 AUTO_INCREMENT,
 	cust_name	  char(50) NOT NULL,
@@ -307,8 +307,6 @@ from Customers left outer join Orders
 on Customers.cust_id = Orders.curt_id;
 ```
 
-
-
 #### 数据库引擎
 
 ##### MyISAM与InnoDB
@@ -319,7 +317,7 @@ MySQL默认是MyISAM;
 
 **（1）事务处理：**
 
-MyISAM不支持事物处理，InnoDB支持事务处理；
+MyISAM不支持事务处理，InnoDB支持事务处理；
 
 **（2）锁机制不同：**
 
@@ -530,7 +528,6 @@ CREATE FULLTEXT INDEX index_content ON article(content)
     FRM 存放表结构
     MYD 存放数据
     MYI 存放索引
-
 ```
 
 - InnoDB 事务型存储引擎，加行锁，支持回滚，崩溃恢复，ACID事务控制，表和索引放在一个表空间里头，表空间多个文件。
@@ -539,7 +536,6 @@ CREATE FULLTEXT INDEX index_content ON article(content)
 例：
     update tableset age=3 where name like "%jeff%";
     //会锁表
-
 ```
 
 2. 正确使用索引
@@ -552,10 +548,9 @@ CREATE FULLTEXT INDEX index_content ON article(content)
 - 不能滥用索引
 
 ```
-    1.索引占用空间
-    2.更新数据，索引必须更新，时间长，尽量不要用在长期不用的字段上建立索引
-    3.SQL执行一个查询语句，增加查询优化的时间
-
+1.索引占用空间
+2.更新数据，索引必须更新，时间长，尽量不要用在长期不用的字段上建立索引
+3.SQL执行一个查询语句，增加查询优化的时间
 ```
 
 3. 避免使用`SELECT *`
@@ -755,8 +750,6 @@ NULL占空间
 5. 函数不能直接操作实体表，只能操作内建表。
 6. 存储过程在创建时即在服务器上进行编译，执行速度更快。
 ```
-
- 
 
 #### 视图
 

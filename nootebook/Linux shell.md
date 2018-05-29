@@ -244,5 +244,17 @@ b
 
 ####sed
 
+对行做处理
+
+```
+[root@localhost ruby] # sed '1,2d' ab           #删除第一行到第二行
+
+[root@localhost ruby] # sed -n '1,2p' ab        #显示第一行到第二行
+
+[root@localhost ruby] # sed -n '/ruby/p' ab    #查询包括关键字ruby所在所有行
+```
+
 #### awk
+
+将一行分为多个字段处理
 
