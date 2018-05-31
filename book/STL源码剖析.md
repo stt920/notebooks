@@ -522,9 +522,443 @@ struct _list_iterator{
 }
 ```
 
+#### list的数据结构
+
+SGI list不仅是一个双向链表，而且还是一个环状双向链表。所以它只需要一个指针，便可以完整表现整个表。
+
+```c++
+template<class T,class Alloc = alloc> //缺省使用alloc为配置器:w  
+class list{  
+protected :  
+    typedef __list_node<T> list_node ;  
+public  :  
+    typedef list_node* link_type ;  
+protected :  
+    link_type node ; //只要一个指针，便可以表示整个环状双向链表  
+    ...
+};
+```
+
+如果让指针node指向可以置于尾端的一个空白节点，node便符合STL对于“前闭后开”区间的要求，成为last迭代
+
+器。
+
+![4-5](./stl/4-5.png)
+
+#### list的元素操作
+
+**push_back**
+
+当使用push_back将新元素插入list尾端时，此函数内部调用insert():
+
+```c++
+void push_back(const T& x) {insert(end(),x);}
+```
+
+**insert**
+
+insert()是一个重载函数，有多种形式，其中最简单的一种如下：
+
+```c++
+iterator insert(iterator position, const T& x){//在迭代器position所指位置插入一个节点，内容为x  
+    link_type tmp = create_node(x);  
+    tmp->next = position.node;  
+    tmp->prev = position.node->node;  
+    (link_type(position.node->prev))->next = tmp;  
+    return tmp;  
+}
+```
+
+![4-6](./stl/4-6.png)
+
+**push_front()**
+
+将新元素插入于list头端，内部调用insert()函数   
+
+```c++
+void push_front(const T&x){  
+insert(begin(),x);  
+}
+```
+
+**eraser()**
+
+```c++
+iterator erase(iterator position){  
+    link_type next_node=link_type(position.node->next);  
+    link_type prev_node=link_type(position.node->prev_nodext);  
+    prev_node->next=next_node;  
+    next_node->prev=prev_node;  
+    destroy_node(position.node);  
+    return iterator(next_node);  
+} 
+```
+
+**pop_front()** 
+
+移除头结点，内部调用erase()函数  
+
+```c++
+void pop_front(){  
+	erase(begin());  
+} 
+```
+
+**pop_back()**
+
+移除尾结点，内部调用erase()函数  
+
+```c++
+void pop_back(){  
+    iterator i=end();  
+    erase(--i);  
+} 
+```
+
+**transfer()**
+
+将某连续范围的元素迁移到某个特定位置之前。技术上讲很简单，节点直接的指针移动而已。这个操作为其他复杂操作如splice，sort，merge等奠定了良好的基础。
+
+```c++
+void transfer(iterator position, iterator first, iterator last) {  
+    if (position != last) {  
+      (*(link_type((*last.node).prev))).next = position.node; //(1)  
+      (*(link_type((*first.node).prev))).next = last.node;    //(2)  
+      (*(link_type((*position.node).prev))).next = first.node;//(3)  
+      link_type tmp = link_type((*position.node).prev);       //(4)  
+      (*position.node).prev = (*last.node).prev;              //(5)  
+      (*last.node).prev = (*first.node).prev;                 //(6)  
+      (*first.node).prev = tmp;                               //(7)  
+    }  
+  }  
+```
+
+![4-8a](./stl/4-8a.png)
+
+### deque
+
+#### deque概述
+
+vector是单向开口的连续线性空间，deque则是一种双向开口的连续线性空间。所谓双向开口，意思是可以在头尾两端分别做元素的插入和删除操所。vector当然也可以在头尾端进行操作（从技术观点），但是其从头部操作效率奇差，无法被接受。
+
+![4-9](./stl/4-9.png)
+
+deque和vector的最大差异，一在于deque允许常数时间内对起头端进行元素的插入或移除操作，二在于deque没有所谓的容量概念，因为它是动态地以分段连续空间组合而成，随时可以增加一段新的空间并链接起来。
+
+虽然deque也提供了Ramdon Access Iterator，但它的迭代器并不是普通指针，其复杂度和vector不可以道里计，这影响了各个运算层面。因此，除非必要，应尽可能选用vector而非deque。对deque进行的排序操作，为了最高效率，可讲deque先完整复制到一个vector上，然后vector排序后，再复制到deque。
+
+#### deque的中控器
+
+deque系由一段一段的定量连续空间构成。一旦有必要在deque的前端或尾端增加新空间，便配置一段定量连续空间，串接在整个deque的头端或尾端。deque的最大任务，便是在这些分段的定量连续空间上，维护其整体连续的假象，并提供随机存取的接口。避开了“重新配置、复制、释放”的轮回，代价则是复杂的迭代器结构。
+
+deque采用一块所谓的map（不是STL的map容器）作为主控。这里所谓map是一小块连续空间，其中每个元素(此处称为一个节点，node)都是指针，指向另一段(较大的)连续线性空间，称为缓冲区。缓冲区才是deque的储存空间主体。 
+
+```c++
+template<class T, class Alloc = alloc, size_t BufSiz = 0>  
+class deque{  
+public :  
+    typedef T value_type ;  
+    typedef value_type* pointer ;  
+    ...  
+protected :  
+    //元素的指针的指针(pointer of pointer of T)  
+    typedef pointer* map_pointer ; //其实就是T**  
+  
+protected :  
+    map_pointer map ; //指向map,map是块连续空间，其内的每个元素  
+                      //都是一个指针(称为节点)，指向一块缓冲区  
+    size_type map_size ;//map内可容纳多少指针  
+    ...  
+};  
+```
+
+![4-10](./stl/4-10.png)
+
+#### deque的迭代器
+
+deque是分段连续空间。维持”整体连续“假象的任务，落在迭代器的operator++和operator—两个运算子上。deque的迭代器首先必须能指出分段连续空间在哪里，其次它必须能够判断自己是否以及处于其所在缓冲区的边缘，如果是，一旦前进或后退时就必须跳跃至下一个或上一个缓冲区。为了能够正确跳跃，deque必须随时掌控管控中心（map）。下面这个实现符合需求：
+
+```c++
+template<class T, class Ref, class Ptr, size_t BufSiz>  
+struct __deque_iterator{ //未继承std::iterator  
+    typedef __deque_iterator<T,T&,T*,BufSize> iterator ;  
+    typedef __deque_iterator<T,const T&,const T*,BufSize> const_iterator ;  
+    static  size_t  buffer_size() {return __deque_buf_size(BufSize,sizeof(T)) ;}   
+  
+    //未继承std::iterator，所以必须自行撰写五个必要的迭代器相应型别  
+    typedef random_access_iterator_tag  iterator_category ;  
+    typedef T   value_type ;  
+    typedef Ptr pointer ;  
+    typedef Ref reference ;  
+    typedef size_t  size_type ;  
+    typedef ptrdiff_t   difference_type ;  
+    typedef T** map_pointer ;  
+  
+    typedef __deque_iterator    self ;  
+  
+    //保持与容器的联结  
+    T *cut ; //此迭代器所指之缓冲区中的现行(current)元素  
+    T *first ; //此迭代器所指之缓冲区的头  
+    T *last ;   //此迭代器所指之缓冲区的尾(含备用空间)  
+    map_pointer node ; //指向管控中心  
+    ...  
+};  
+```
+
+  ![4-11](./stl/4-11.png)
+
+#### deque的数据结构
+
+deque除了维护一个先前说过的指向map的指针外，也维护start，finish两个迭代器，分别指向第一缓冲区的第一个元素和最后缓冲区的最后一个元素（的下一个位置）。此外，它当然也必须记住目前的map大小，因为一旦map所提供的节点不足，就必须重新配置更大的一块map。
+
+```c++
+  template<class T, class Alloc = alloc, size_t BufSiz = 0>  
+  class deque{  
+  public :  
+      typedef T   value_type ;  
+      typedef value_type* pointer ;  
+      typedef size_t  size_type ;  
+  public :  
+      typedef __deque_iterator<T,T&,T*,BufSiz>  iterator ;  
+  protected :  
+      //元素的指针的指针(pointer of pointer of T)  
+      typedef pointer*    map_pointer ;  
+  protected:  
+      iterator    start ; //表现第一节点  
+      iterator    finish ; //表现最后一个节点  
+      map_pointer map ; //指向map,map是块连续空间，其每个元素都是个指针，指向一个节点(缓冲区)  
+      size_type   map_size ; //map内有多少指针  
+      ...  
+  } ; 
+```
+
+![4-12](./stl/4-12.png)
+
+#### deque的构造与内存管理
+
+```c++
+#include<iostream>
+#include<deque>
+#include<algorithm>
+using namespace std;
+
+int main(){
+	deque<int,alloc,8> ideq(20, 9);
+	cout << "size=" << ideq.size() << endl;
+
+	for (int i = 0; i < ideq.size(); ++i)
+		ideq[i] = i;
+
+	for (int i = 0; i < ideq.size(); ++i)
+		cout << ideq[i] << ' ';
+	cout << endl;
+
+	for (int i = 0; i < 3; i++)
+		ideq.push_back(i);
+
+	for (int i = 0; i < ideq.size(); ++i)
+		cout << ideq[i] << ' ';
+	cout << endl;
+	cout << "size=" << ideq.size() << endl;
+
+	ideq.push_back(3);
+	for (int i = 0; i < ideq.size(); ++i)
+		cout << ideq[i] << ' ';
+	cout << endl;
+	cout << "size=" << ideq.size() << endl;
+
+	ideq.push_front(99);
+	for (int i = 0; i < ideq.size(); ++i)
+		cout << ideq[i] << ' ';
+	cout << endl;
+	cout << "size=" << ideq.size() << endl;
+
+	ideq.push_front(98);
+	ideq.push_front(97);
+	for (int i = 0; i < ideq.size(); ++i)
+		cout << ideq[i] << ' ';
+	cout << endl;
+	cout << "size=" << ideq.size() << endl;
+
+	deque<int>::iterator it = find(ideq.begin(), ideq.end(), 99);
+	cout << *it << endl;
+	
+	system("pause");
+	return 0;
+}
+
+```
+
+![4-13](./stl/4-13.png)
+
+![4-14](./stl/4-14.png)
+
+![4-15](./stl/4-15.png)
+
+![4-16](./stl/4-16.png)
+
+### stack
+
+#### stack概述
+
+stack是一种先进先出的数据结构。它只能有一个出口。stack允许新增元素、移除元素、取得最顶端元素。但除了最顶端元素外，没有任何其他方法可以存取stack的其他元素。换言之，stack不允许有遍历行为。
+
+将新元素推入stack的操作称为push，将元素推出stack的操作称为pop。
+
+![4-18](./stl/4-18.png)
+
+#### stack定义完整列表
+
+以某种既有容器作为底部结构，将其接口改变，使之符合“先进先出”的特性，形成一个stack，是很容易做到的。deque是双向开口的数据结构，若以deque为底部结构并封闭其头端开口，便轻而易举地形成一个stack。因此，**SGI STL便以deque作为缺省情况下的stack底部结构 **，stack的实现因而非常简单，源代码十分简短。
+
+```C++
+template<class T, class Sequence = deque<T> >  
+class stack{  
+    friend bool operator== __STL_NULL_TMPL_ARGS(const stack& , const stack&) ;  
+    friend bool operator< __STL_NULL_TMPL_ARGS(const stack& , const stack&) ;  
+public :  
+    typedef typename Sequence::value_type value_type ;  
+    typedef typename Sequence::size_type size_type ;      
+    typedef typename Sequence::reference reference ;  
+    typedef typename Sequence::const_reference  const_reference ;  
+protected:  
+    Sequence c ; //底层容器  
+public :  
+    //以下完全利用Sequence c 的操作，完成stack的操作  
+    bool empty() const {return c.empty() ;}   
+    size_type size() {return c.size();}  
+    reference top() {return c.back();}  
+    const_reference top() const {return c.back();}  
+    //deque是两头可进出，stack是末端进，末端出。  
+    void push(const value_type& x) {c.push_back(x) ;}  
+    void pop() {c.pop_back() ;}  
+} ;  
+```
+
+#### stack没有迭代器
+
+stack所有元素的进出都符合“先进先出”的条件，只有stack顶端的元素，才有机会被外界取用。stack不能提供走访功能，也不提供迭代器。
+
+#### 以list作为stack的底层容器
+
+除了deque之外，list也是双向开口的数据结构。上述stack源代码中使用的底层容器的函数有empt，size，back，push_back，pop_back，凡此种种，list都具备。因此，list为底部结构并封闭其头端开口，一样能够轻而易举形成一个stack。
+
+```c++
+#include<stack>  
+#include<list>  
+#include<algorithm>  
+#include <iostream>  
+using namespace std;  
+  
+int main(){  
+    stack<int, list<int>> istack;  
+    istack.push(1);  
+    istack.push(3);  
+    istack.push(5);  
+      
+    cout << istack.size() << endl; //3  
+    cout << istack.top() << endl;//5  
+    istack.pop();  
+    cout << istack.top() << endl;//3  
+    cout << istack.size() << endl;//2  
+  
+    system("pause");  
+    return 0;  
+}  
+```
+
+### queue
+
+#### queue概述
+
+queue是一种先进先出(First In FirstOut,FIFO)的数据结构，它有两个出口。queue允许新增元素、移除元素、从最底端加入元素、取得最顶端元素，但不允许遍历行为。 
+
+![4-19](.\stl\4-19.png)
+
+#### queue定义完整列表
+
+SGI STL以deque作为缺省情况下的queue底部结构。 
+
+```c++
+template<class T, class Sequence = deque<T> >  
+class queue{  
+      
+public :      
+    typedef typename Sequence::value_type value_type ;  
+    typedef typename Sequence::size_type size_type ;  
+    typedef typename Sequence::reference reference ;  
+    typedef typename Sequence::const_reference const_reference ;  
+protected :  
+    Sequence c ; //底层容器  
+public :  
+    //以下完全利用Sequence c的操作，完成queue的操作  
+    bool empty() const {return c.empty();}  
+    size_type size() const {return c.size();}  
+    reference front() const {return c.front();}  
+    const_reference front() const {return c.front();}  
+    //deque是两头可进出，queue是末端进，前端出。  
+    void push(const value_type &x) {c.push_back(x) ;}   
+    void pop() {c.pop_front();}  
+} ;  
+```
+
+#### queue没有迭代器
+
+queue所有元素的进出都必须符合“先进先出”的条件，只有queue顶端的元素，才有机会被外界去用。queue不提供遍历功能，也不提供迭代器。
+
+#### 以list作为queue的底层迭代器
+
+```c++
+#include<queue>  
+#include<list>  
+#include<algorithm>  
+#include <iostream>  
+using namespace std;  
+  
+int main(){  
+    queue<int, list<int>> iqueue;  
+    iqueue.push(1);  
+    iqueue.push(3);  
+    iqueue.push(5);  
+      
+    cout << iqueue.size() << endl; //3  
+    cout << iqueue.front() << endl;//1  
+    iqueue.pop();  
+    cout << iqueue.front() << endl;//3  
+    cout << iqueue.size() << endl;//2  
+  
+    system("pause");  
+    return 0;  
+}  
+```
 
 
-### slist
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
