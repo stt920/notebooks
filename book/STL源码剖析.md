@@ -873,7 +873,7 @@ int main(){
 
 queue是一种先进先出(First In FirstOut,FIFO)的数据结构，它有两个出口。queue允许新增元素、移除元素、从最底端加入元素、取得最顶端元素，但不允许遍历行为。 
 
-![4-19](.\stl\4-19.png)
+![4-19](./stl/4-19.png)
 
 #### queue定义完整列表
 
@@ -932,21 +932,63 @@ int main(){
 }  
 ```
 
+### heap
 
+#### heap概述
 
+heap并不归属于STL容器组件，它扮演priority queue的助手。binary max heap是priority queue的底层机制。
 
+binary heap是一种complete binary tree（完全二叉树），也就是说，整棵binary tree除了最底层的叶节点(s)之外，是填满的，而最底层的叶节点(s)由左至右不得由空隙。
 
+![4-20](./stl/4-20.png)
 
+complete binary tree整棵树内没有任何节点漏洞。利用array来存储completebinary tree的所有节点，将array的#0元素保留，那么当complete binary tree的某个节点位于array的i处时，其左子节点必位于array的2i处，右子节点必位于array的2i+1处，父节点必位于i/2处。
 
+ 根据元素排列方式，heap分为max-heap和min-heap两种，前者每个节点的键值都大于或等于其子节点的值，后者每个节点的键值都小于或等于其子节点的值。max-heap中最大值在根节点，min-heap最小值在根节点。底层存储结构为vector或者array。 
 
+#### heap算法
 
+##### push_heap算法
 
+为了满足complete binary tree的条件，新加入的元素一定要放在最下一层作为叶节点，并填补在由左至右的第一个空格，也就是吧新元素插入在底层vector的end()处。![4-21](./stl/4-21.png)
 
+新元素是否适合于其现有位置呢？为满足max-heap的条件（每个节点的键值都大于或等于其子节点键值），我们执行一个所谓的percolate up（上溯）程序：将新节点拿来与其父节点比较，如果其键值（key）比父节点大，就父子对换位置，如此一直上溯，直到不需对换或直到根节点为止。
 
+```C++
+template<class RandomAccessIterator>
+inline void push_heap(RandomAccessIterator first,RandomAccessIterator last)
+{
+    //注意，此函数被调用时，新元素应已置于底部容器的最尾端
+    _push_heap_aux(first,last,distance_type(first),value_type(first))；
+}
 
+template<class RandomAccessIterator，class Distance,class T>
+inline void _push_heap_aux(RandomAccessIterator first,Distance*,T*)
+{
+    _push_heap(first,Distance(last-first)-1),Distance(0),T(*(last-1)));
+    //以上系根据implicit representation heap的结构特性：新值必须置于底部容器的最尾端，此即第一个洞号：（last-first）-1
+}
 
+template<class RandomAccessIterator，class Distance,class T>
+void _push_heap(RandomAccessIterator first,Distance holeIndex,Distance topIndex,T value){
+    Distance parent(holeIndex-1)/2;//找出父节点
+    while(holeIndex>topIndex&&*(first+parent)<value)
+    {
+        //当尚未达到顶端，且父节点小于新值（于是不符合heap的次序特性）
+        //由于以上使用operator<,可知STL heap是一种max-heap
+        *(first+holeIndex)=*(first+parent);//令洞值为父值
+        holeIndex=parent;//调整洞号，向上提升至父节点
+        parent=(holeIndex-1)/2;//新洞的父节点
+    } //持续至顶端，或满足heap的次序特性为止
+    *(first+holeIndex)=value;//令洞值为新值，完成插入操作
+}
+```
 
+##### pop_heap算法
 
+图示为pop_heap算法的实际操作情况。既然自身为max-heap，最大值必然在根节点。pop操作取走根节点（其实是移至底部容器vector的最后一个元素）之后，为了满足complete binary tree的条件，必须将最下一层右边的叶节点拿掉，现在我们的任务是为这个被拿掉的节点找一个适当的位置。
+
+为满足max-heap的条件（每个节点的键值都大于或等于其子节点键值），我们执行一个所谓的percolate down（下溯）程序：将根节点（最大值被取走后，形成一个”洞“）填入上述那个失去生存空间的叶节点值，再将它拿来和其两个子节点比较键值（key），并于较大子节点对调位置。如此一直下放，直到这个”洞“的键值大于左右两个子节点，或直到下放至叶节点为止。![4-22](./stl/4-22.png)
 
 
 
