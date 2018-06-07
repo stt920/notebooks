@@ -990,9 +990,75 @@ void _push_heap(RandomAccessIterator first,Distance holeIndex,Distance topIndex,
 
 为满足max-heap的条件（每个节点的键值都大于或等于其子节点键值），我们执行一个所谓的percolate down（下溯）程序：将根节点（最大值被取走后，形成一个”洞“）填入上述那个失去生存空间的叶节点值，再将它拿来和其两个子节点比较键值（key），并于较大子节点对调位置。如此一直下放，直到这个”洞“的键值大于左右两个子节点，或直到下放至叶节点为止。![4-22](./stl/4-22.png)
 
+```C++
+template <class _RandomAccessIterator, class _Distance, class _Tp>  
+void   
+_adjust_heap(_RandomAccessIterator _first, _Distance _holeIndex, _Distance _len, _Tp _value) 
+{  
+  _Distance _topIndex = _holeIndex;//根节点标号  
+  _Distance _secondChild = 2 * _holeIndex + 2;//获取子节点  
+  while (_secondChild < _len) {//若子节点标号比总的标号数小  
+    if (*(_first + _secondChild) < *(_first + (_secondChild - 1)))  
+      _secondChild--;//找出堆中最大关键字值的节点  
+    //若堆中存在比新根节点元素（即原始堆最后节点关键字值）大的节点,则交换位置   
+    *(_first + _holeIndex) = *(_first + _secondChild);  
+    _holeIndex = _secondChild;//更新父节点  
+    _secondChild = 2 * (_secondChild + 1);//更新子节点  
+  }  
+  if (_secondChild == _len) {  
+    *(_first + __holeIndex) = *(_first + (_secondChild - 1));  
+    _holeIndex = _secondChild - 1;  
+  }  
+  _push_heap(_first, _holeIndex, _topIndex, _value);  
+}  
+  
+template <class _RandomAccessIterator, class _Tp, class _Distance>  
+inline void   
+__pop_heap(_RandomAccessIterator _first, _RandomAccessIterator _last,  
+           _RandomAccessIterator _result, _Tp _value, _Distance*)  
+{  
+  *_result = *_first;//把原始堆的根节点元素放在容器的末尾  
+  //调整剩下的节点元素，使其成为新的heap  
+  _adjust_heap(_first, _Distance(0), _Distance(_last - _first), _value);  
+}  
+  
+template <class _RandomAccessIterator, class _Tp>  
+inline void   
+__pop_heap_aux(_RandomAccessIterator _first, _RandomAccessIterator _last,  
+               _Tp*)  
+{  
+  _pop_heap(_first, _last-1, _last-1, _Tp(*(_last-1)), _DISTANCE_TYPE(_first));  
+}  
+  
+template <class _RandomAccessIterator>  
+inline void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator _last)  
+{  
+  _STL_REQUIRES(_RandomAccessIterator, _Mutable_RandomAccessIterator);  
+  _STL_REQUIRES(typename iterator_traits<_RandomAccessIterator>::value_type,  
+                 _LessThanComparable);  
+  _pop_heap_aux(_first, _last, _VALUE_TYPE(_first));  
+}
+```
+
+##### sort_heap算法
+
+既然每次pop_heap可获得heap中键值最大的元素，如果持续对整个heap做pop_heap操作，每次将操作范围从后向前缩减一个元素（因为pop_heap会把键值最大的元素放在底部容器的最尾端），当整个程序执行完毕时，我们便有了一个递增序列。
+
+```C++
+
+```
+
+![4-23a](./stl/4-23a.png)
 
 
 
+![4-23b](./stl/4-23b.png)
+
+##### make_heap算法
+
+### priority_queue
+
+#### priority_queue概述
 
 
 
