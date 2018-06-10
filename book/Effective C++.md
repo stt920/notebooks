@@ -756,3 +756,220 @@ processWidget(pw, priority()); //这个调用动作绝不至于造成泄漏
 - 以独立语句将newed对象存储于（置入）智能指针内。如果不这样做，一旦异常抛出，有可能导致难以察觉的资源泄漏。   
 
 ## 第四章 设计与声明
+
+### 条款18：让接口容易被正确使用，不易被误用
+
+- 考虑客户可能做出什么样的错误。
+
+- 除非有好理由，否则应该尽量令你的types的行为与内置types一致。 
+- tr1::shared_ptr有一个特别好的性质是：它会自动使用它的“每个指针专属的删除器”，因而消除另一个潜在的客户错误：所谓的“cross-DLL problem”。这个问题发生于“对象在动态连接程序库（DLL）中被new创建，却在另一个DLL内被delete销毁”。在许多平台上，这一类“跨DLL之new/delete成对运用”会导致运行期错误。tr1::shared_ptr没有这个问题，因为它缺省的删除器是来自“tr1::shared_ptr诞生所在的那个DLL”的delete。 
+
+请记住：
+
+- 好的接口很容易被正确使用，不容易被误用。你应该在你的所有接口中努力达成这些性质。
+- “促进正确使用”的办法包括接口的一致性，以及与内置类型的行为兼容。
+- “阻止误用”的办法包括建立新类型、限制类型上的操作，束缚对象值，以及消除客户的资源管理责任。
+- tr1::shared_ptr支持定制删除器。这可防范DLL问题，可被用来自动解除互斥量等等。   
+
+### 条款19：设计class犹如设计type
+
+如何设计高效的classes呢？首先你必须了解面对的问题。几乎每一个class都要求面对以下提问，而你的回答往往导致你的设计规范：
+
+- 新type的对象应该如何被创建和销毁？构造函数和析构函数以及内存分配函数和释放函数的设计。
+- 对象的初始化和对象的赋值该有什么样的差别？ 决定于构造函数和赋值操作符的行为，以及其间的差异。
+- 新type的对象如果被passed by value（以值传递），意味着什么？ copy构造函数用来定义一个type的passed by value该如何实现。
+- 什么是新type 的“合法值”？ 对class的变量而言，通常只有某些数值集是有效的。那些数值集决定了你的class必须维护的约束条件，也就决定了你的成员函数必须进行错误检查工作。它也影响函数抛出异常、以及函数异常明细列。
+- 你的新type需要配合某个继承图系(inheritancegraph)吗？ 如果你的class是从别的基类继承下来的，那么会受到基类的束缚。反之，如果你允许其他classes继承你的class，会影响你声明的函数尤其是析构函数是否是virtual。 
+- 你的新type需要声明样的转换？显示or隐式。
+- 什么样的操作符和函数对此新type而言是合理的？ 这个问题答案决定你将为你的class声明哪些函数。其中某些该是member函数，某些则否。
+- 什么样的标准函数应该驳回？ 声明为private者。
+- 谁该取用新type的成员？ 
+- 什么是新type的“未声明接口”(undeclared interface) 
+- 你的新type有多么一般化？ 并非定义一个新type，而是定义一个types家族，应该定义为class template。
+- 你真的需要一个新type吗？ 如果只是定义新的derived class以便为既有的class添加机能，那么说不定单纯定义一个或多个non-member函数或templates，更能够达到目标。
+
+请记住：
+
+- Class的设计就是type的设计。在定义一个新的type之前，请确定你已经考虑过本条款覆盖的所有讨论主题。  
+
+### 条款20：宁以pass-by-reference-to-const替代pass-by-value
+
+1、缺省情况下C++以by value方式传递对象至函数。除非你另外指定，否则函数参数都是以实际实参的**副本为初值**，而调用端所获得的亦是返回值的一个副本。这些副本由对象的**拷贝构造函数产生**，这可能使得pass by value成为昂贵的操作。 
+
+```c++
+#include<iostream>  
+#include<string>  
+using namespace std;
+class Person {
+public:
+	Person() { cout << "Person()" << endl; }
+	Person(const Person& p) :name(p.name), address(p.address) {
+		cout << "Person copy construct" << endl;
+	}
+	~Person() { cout << "~Person()" << endl; }
+private:
+	string name;
+	string address;
+};
+class Student :public Person {
+public:
+	Student() { cout << "Student()" << endl; }
+	Student(const Student& s):Person(s), schoolName(s.schoolName), schoolAddress(s.schoolAddress) {
+		cout << "Student copy construct" << endl;
+	}
+	~Student() { cout << "~Student()" << endl; }
+private:
+	string schoolName;
+	string schoolAddress;
+};
+//pass-by-value
+bool validateStudent(Student s) {
+	return true;
+}
+int main() {
+	Student s;
+	cout << "------------------" << endl;
+	bool  b = validateStudent(s);
+	return 0;
+}
+```
+
+运行结果：
+
+```
+Person()
+Student()
+------------------
+Person copy construct
+Student copy construct
+~Student()
+~Person()
+~Student()
+~Person()
+```
+
+说明：从运行结果我们可以对validateStudent函数的参数的传递成本是“一次Student拷贝构造函数调用和一次Student析构函数调用”。其实远不止这些，因为上述两个类都含有两个string，他们也相应的调用拷贝构造函数，就是说四次string拷贝构造动作，还有四次析构函数。所以最终结果是以by value方式传递一个Student对象会导致一次Student拷贝构造函数、一次Person拷贝构造函数、四次string拷贝构造函数。当函数内的那个Student副本被销毁时，都要调用对应的析构函数。因此，以by value方式传递一个Student对象总体成本是“六次构造函数和六次析构函数”。 
+
+避免构造和析构的方法，就是pass by reference-to-const。
+
+```c++
+bool validateStudent(const Student& s){  
+    return true;  
+} 
+```
+
+ 运行结果：
+
+```
+Person()
+Student()
+------------------
+~Student()
+~Person()
+```
+
+说明：这种传递方式的效率高得多：没有任何构造函数或析构函数被调用，因为没有任何新对象被创建。将它声明为const是必要的，防止传入的Student对象被改变。 
+
+2、以by reference方式传递参数可以避免slicing（对象切割）问题。当一个derived class对象以by value方式传递并视为一个base class对象，base class的copy构造函数会被调用，而“造成此对象的行为像个derived class对象”的那些特化性质全被切割掉了，仅仅留下一个base class对象。
+
+以by reference方式传递参数可以避免切割问题。如果窥视c++编译器的底层，references往往以指针实现出来，因此pass by reference通常意味着这真正传递的是指针。对内置类型（例如int）而言，pass by value或pass by reference-to-const时，选择pass by value并非没有道理。这个忠告也适用于STL的迭代器和函数对象，因为习惯上它们都被设计为pass by value。 
+
+slicing（对象切割）例子：
+
+```c++
+#include<iostream>  
+#include<string>  
+using namespace std;
+
+class Window {
+public:
+	virtual void display()const {
+		cout << "window display()" << endl;
+	}
+};
+class WindowWithScrollBars :public Window {
+public:
+	virtual void WindowWithScrollBars::display() const {
+		cout << "WindowWithScrollBars display()" << endl;
+	}
+};
+void pintNaandWind(Window w) {
+	w.display();
+}
+
+int main() {
+	WindowWithScrollBars wwsb;
+	pintNaandWind(wwsb);
+	return 0;
+}
+```
+
+输出结果：
+
+```
+window display()
+```
+
+说明：从运行结果可以看出，我们得到的是Window的display()，而我们本想得到WindowWithScrollBars的display()。它调用的是window对象的display()，而不是子类的，因为pintNaandWind中的参数传递是by value，WindowWithScrollBars的所有特化信息都会被切除。解决办法是 pass by reference-to-const。 
+
+```c++
+void pintNaandWind(Window& w){  
+    w.display();  
+}  
+```
+
+运行结果：
+
+```
+WindowWithScrollBars display()
+```
+
+请记住:
+
+- 尽量以pass-by-reference-to-const替换pass-by-value。前者通常比较高效，并可避免切割问题(slicingproblem)。
+- 以上规则并不适合与内置类型，以及STL的迭代器和函数对象。对它们而言，pass-by-value往往比较适合。
+
+### 条款21：必须返回对象时，别妄想返回其reference
+
+在坚定追求pass-by-value（传值）的纯度中，一定会犯下一个致命的错误：开始传递一些references执行其实并不存在的对象。这可不是什么好事。任何时候看到一个reference声明式，都必须立刻问自己，它的另一个名称是什么？因为它一定是某物的另一个名称。
+
+函数创建新对象的途径有二：在栈空间或在堆空间创建。 
+
+在stack空间创建对象例子：
+
+```c++
+class Rational{  
+public:  
+    Rational(int numerator, int denominator);  
+    ...  
+private:  
+    int n, d;  
+    friend const Rational operator*(const Rational& lhs, const Rational& rhs);  
+};  
+const Rational& operator*(const Rational& lhs, const Rational& rhs){  
+    Rational result(lhs.n * rhs.n, lhs.d * rhs.d);  
+    return result;  
+}  
+```
+
+你可以拒绝这种做法，因为你的目标是避免调用构造函数，而result却必须像任何对象一样地由构造函数构造起来。更严重的是：这个函数返回一个reference指向result，但result是个local对象，而local对象在函数退出前就被销毁了。
+
+在heap空间创建对象例子：
+
+```c++
+const Rational& operator*(const Rational& lhs, const Rational& rhs){  
+    Rational* result = new Rational(lhs.n * rhs.n, lhs.d * rhs.d);  
+    return result;  
+}
+```
+
+在堆上构造一个对象，并返回reference指向它。会出现问题：谁该对着被你new出来的对象实施delete呢？还有一个问题：如果有计算：Rational result = x*y*z,其中x、y、z都是Rational类型的对象，此时就会产生内存泄露的问题。因为同一语句内调用了两次operator*，因而使用两次new，也就需要两次delete，但却没有合理的办法让` operator * 使用者进行那些delete调用，因为没有办法取得operator*返回的references背后隐藏的那个指针。
+
+一个“必须返回新对象”的函数的正确写法是：就让那个函数返回一个新对象。
+
+请记住：
+
+- 绝不要返回pointer或reference指向一个local stack对象，或返回reference指向一个heap-allocated对象，或返回pointer或reference指向一个local static对象而有可能同时需要多个这样的对象。 
+
+### 条款22：将成员变量声明为private
+

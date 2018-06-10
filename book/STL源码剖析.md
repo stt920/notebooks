@@ -1045,7 +1045,14 @@ inline void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator _last)
 既然每次pop_heap可获得heap中键值最大的元素，如果持续对整个heap做pop_heap操作，每次将操作范围从后向前缩减一个元素（因为pop_heap会把键值最大的元素放在底部容器的最尾端），当整个程序执行完毕时，我们便有了一个递增序列。
 
 ```C++
-
+//以下这个sort_heap()不允许指定“大小比较标准”
+template <class RandomAccessIterator>
+void sort_heap(RandomAccessIterator first,RandomAccessIterator last){
+	//以下，每没执行一次pop_heap(),极值（在STL heap中为极大值）即被放在尾端
+	//扣除尾端再执行一次pop_heap()，次极值又被放在新尾端。一直下去，最后即得排序结果
+	while(last-first>1)
+		pop_heap(first,last--);
+}
 ```
 
 ![4-23a](./stl/4-23a.png)
@@ -1056,19 +1063,79 @@ inline void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator _last)
 
 ##### make_heap算法
 
+这个算法用来将一段现有数据转化成一个heap。
 
+```c++
+//将[first,last)排列成一个heap
+template<class RandomAccessIterator>
+inline void make_heap(RandomAccessIterator first,RandomAccessIterator last){
+	_make_heap(first,last,value_type(first),distance_type(first));
+}
+//以下这组make_heap()不允许指定“大小比较标准”
+template<class RandomAccessIterator,class T,class Distance>
+void _make_heap(RandomAccessIterator first,RandomAccessIterator last,T*,Distance*){
+	if(last-first<2) return;//如果长度为0或1，不必重新排列
+	Distance len=last-first;
+	//找出第一个需要重排的子树头部，以parent标示出。由于任何叶节点都不需执行parlocate down，所以有以下计算。
+	Distance parent=(len-1)/2;
+	
+    while(true){
+    	//重排以parent为首的子树。len是为了让_adjust_heap()判断操作范围
+    	_adjust_heap(first,parent,len,T(*(first+parent)));
+    	if(parent==0) return;  //走完根节点，就结束
+    	parent--；             //（即将重排子树的）头部向前一个节点
+    }
+}
+```
+
+##### heap没有迭代器
+
+heap的所有元素都必须遵循特别的（complete binary tree）排列规则，所以heap不提供遍历功能，也不提供迭代器。
 
 ### priority_queue
 
 #### priority_queue概述
 
+priority_queue是一个拥有权值观念的queue，它允许加入新元素、移除就元素、审视元素值等功能。由于它是一个queue，所以只允许在低端加入元素，并从顶端取出元素，除此之外别无其他存取元素的途径。
+
+priority_queue带有权值观念，其内的元素并非依照被推入的顺序排列，而是自动依照元素的权值排列（通常权值以实值标识）。权值最高者，排在最前面。
+
+缺省情况下priority_queue系利用一个max-heap完成，后者是一个以vector表现的complete binary tree。max-heap可以满足priority_queue所需要的“依权值高低自动递增排序”的特性。
+
+![4-24](./stl/4-24.png)
 
 
 
+priority_queue缺省情况下是以vector为底层容器，再加上heap处理规则，STL priority_queue往往不被归类为container(容器)，而被归类为containeradapter。 
 
+#### priority_queue测试实例
 
+```c++
+#include<queue>  
+#include<iostream>  
+#include<algorithm>  
+using namespace std;  
+  
+int main(void){  
+    //test priority queue...  
+    int ia[9] = { 0, 1, 2, 3, 4, 8, 9, 3, 5 };  
+    priority_queue<int> ipq(ia, ia + 9);  
+    cout << "size= " << ipq.size() << endl;    //size=9
+  
+    for (int i = 0; i < ipq.size(); ++i)  
+        cout << ipq.top() << ' ';              //9 9 9 9 9 9 9 9 9
+    cout << endl;  
+  
+    while (!ipq.empty()){  
+        cout << ipq.top() << ' ';             //9 8 5 4 3 3 2 1 0
+        ipq.pop();  
+    }  
+    cout << endl;  
+  
+    system("pause");  
+    return 0;  
+} 
+```
 
-
-
-
+## 第五章 关联式容器
 
