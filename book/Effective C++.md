@@ -963,7 +963,7 @@ const Rational& operator*(const Rational& lhs, const Rational& rhs){
 }
 ```
 
-在堆上构造一个对象，并返回reference指向它。会出现问题：谁该对着被你new出来的对象实施delete呢？还有一个问题：如果有计算：Rational result = x*y*z,其中x、y、z都是Rational类型的对象，此时就会产生内存泄露的问题。因为同一语句内调用了两次operator*，因而使用两次new，也就需要两次delete，但却没有合理的办法让` operator * 使用者进行那些delete调用，因为没有办法取得operator*返回的references背后隐藏的那个指针。
+在堆上构造一个对象，并返回reference指向它。会出现问题：谁该对着被你new出来的对象实施delete呢？还有一个问题：如果有计算：Rational result = x*y*z,其中x、y、z都是Rational类型的对象，此时就会产生内存泄露的问题。因为同一语句内调用了两次operator*，因而使用两次new，也就需要两次delete，但却没有合理的办法让operator * 使用者进行那些delete调用，因为没有办法取得operator*返回的references背后隐藏的那个指针。
 
 一个“必须返回新对象”的函数的正确写法是：就让那个函数返回一个新对象。
 
