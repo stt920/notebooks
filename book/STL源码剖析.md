@@ -1204,7 +1204,9 @@ AVL tree是一个“加上了额外平衡条件”的二叉搜索树。其平衡
 
 ![5-11](./stl/5-11.png)
 
-#### RB-tree
+### RB-tree
+
+[红黑树比AVL树的优势](https://blog.csdn.net/mmshixing/article/details/51692892)
 
 RB-tree不仅是一个二叉搜索树，而且必须满足一些规则：
 
@@ -1212,3 +1214,293 @@ RB-tree不仅是一个二叉搜索树，而且必须满足一些规则：
 2. 根节点为黑色
 3. 如果节点为红，其子节点必须为黑
 4. 任一节点至NULL(树尾端)的任何路径，所含之黑节点数必须相同
+
+根据规则4，新增节点不许为红；根据规则3，新增节点之父节点必须为黑。当新节点根据二叉搜索树的规则到达其插入点，却未能符合上述条件时，就必须调整颜色并旋转树形。
+
+![5-13](./stl/5-13.png)
+
+#### 插入节点
+
+在图5-13的RB-tree分别插入3，8，35，75，根据二叉搜索树的规则，这四个新节点落脚处应如图5-14所示，它们破坏了RB-tree的规则，因此必须调整树形，也就是旋转树形并改变节点颜色。![5-14](./stl/5-14.png)
+
+> 假设新节点为X，其父节点为P，祖父节点为G，伯父节点（父节点的兄弟节点）为S，曾祖父节点为GG
+
+- 状况1：S为黑且X为外侧插入。对此情况，先对P,G做一次单选转，再更改P,G颜色，即可重新满足红黑树的规则3。
+
+![5-15a](./stl/5-15a.png)
+
+- 状况2：S为黑且X为内测插入。对此情况，必须现对P,X做一次单选转并更改G,X颜色，再将结果对G做一次单选转，即可再次满足红黑树规则3。
+
+![5-15b](./stl/5-15b.png)
+
+- 状况3：S为红且X为外侧插入。对此情况，现对P和G做一次单选转，并改变X的颜色。此时如果GG为黑，一切搞定，但如果GG为红，则问题比较大，见状况4。
+
+  ![5-15c](./stl/5-15c.png)
+
+- 状况4：S为红且X为外侧插入。对此情况，先对P和G做一次单选转，并改便X的颜色。此时如果GG也为红。害的持续网上做，直到不再有父子连续为红的情况。
+
+![5-15d](./stl/5-15d.png)
+
+#### 一个自上而下的程序
+
+为避免插入节点的情况4，可以用自顶向下的方法：假设新增节点为A，就顺着A的路径，当遇到一个节点X的两个儿子都为红，就将X改为红，两个儿子改为黑。当X的父节点也为红使用情况1或情况2中的方法做调整。 
+
+![5-15e](./stl/5-15e.png)
+
+![5-15f](./stl/5-15f.png)
+
+#### RB-tree的节点设计
+
+RB-tree有红黑二色，并且拥有左右子节点，很容易勾勒出其结构风貌。下面是SGI STL的实现源码。为了有更大的弹性，节点分为两层。
+
+由于RB-tree的各种操作时常需要上溯其父节点，所以特别在数据结构中安排了一个parent指针。
+
+```c++
+typedef bool __rb_tree_color_type;  
+const __rb_tree_color_type __rb_tree_red = false;     // 红色为0  
+const __rb_tree_color_type __rb_tree_black = true; // 黑色为1  
+  
+struct __rb_tree_node_base  
+{  
+  typedef __rb_tree_color_type color_type;  
+  typedef __rb_tree_node_base* base_ptr;  
+  
+  color_type color;     // 节点颜色，红色或黑色  
+  base_ptr parent;      // 该指针指向其父节点  
+  base_ptr left;        // 指向左节点  
+  base_ptr right;       // 指向右节点  
+  
+  static base_ptr minimum(base_ptr x)  
+  {  
+     while (x->left != 0) x = x->left; //一直向左走，找到最小值  
+     return x;                              
+  }  
+  
+  static base_ptr maximum(base_ptr x)  
+  {  
+    while (x->right != 0) x = x->right; //一直向右走，找到最大值  
+    return x;                             
+  }  
+};  
+  
+template <class Value>  
+struct __rb_tree_node : public __rb_tree_node_base  
+{  
+  typedef __rb_tree_node<Value>* link_type;  
+  Value value_field;   //节点值  
+}; 
+```
+
+#### RB-tree的迭代器
+
+SGI将RB-tree迭代器实现分为两层。图5-16是两层节点结构和双层迭代器结构间的关系，其中主要意义是：            _ rb_tree_node 继承自  _rb_tree_node_base ，_rb_tree_iterator继承自_rb_tree_base_iterator。
+
+ ![5-16](./stl/5-16.png)
+
+#### RB-tree的元素操作
+
+RB-tree提供两种插入操作：insert_unique()和insert_equal()，前者标识被插入节点的键值（key）在整棵树中必须独一无二（因此，如果整棵树中已存在相同的键值，插入操作就不会真正进行），后者标识被插入节点的键值在整棵树中可以重复，因此，无论如何插入都会成功（除非空间不足导致配置失败）。
+
+### set
+
+1. 所有的元素都会根据元素的键值自动被排序。set的元素不像map那样可以同时拥有实值（value）和键值（key），set元素的键值就是实值。set不允许两个元素有相同的键值。
+2. 不可以通过set的迭代器改变set的元素值。因为set元素值就是其键值，关系到set元素的排列规则。如果任意改变set元素值，会严重破坏set组织。set源码中，`set<T>::iterator`被定义为底层RB-tree的const_iterator，杜绝写入操作。换句话，set iterators是一种constant iterators。
+3. set拥有与list相同的某些性质：当客户端对它进行元素新增操作（insert）或删除操作（erase）时，操作之前的所有迭代器，在操作完成之后依然有效。当然，被删除的那个元素的迭代器必然是个例外。
+4. STL set以RB-tree为底层机制，set的操作几乎都是转调用RB-tree的函数而已。
+
+set测试代码: 
+
+```c++
+#include<set>
+#include<iostream>
+using namespace std;
+
+int main(){
+	int ia[] = { 5, 3, 4, 1, 6, 2 };
+	set<int> iset(begin(ia), end(ia));
+
+	cout << "size=" << iset.size() << endl; //size=6
+	cout << "3 count=" << iset.count(3) << endl;//3 count=1
+
+	iset.insert(3);
+	cout << "size=" << iset.size() << endl;//size=6
+	cout << "3 count=" << iset.count(3) << endl;//3 count=1
+
+	iset.insert(7);
+	cout << "size=" << iset.size() << endl;//size=7
+	cout << "3 count=" << iset.count(3) << endl;//3 count=1
+
+	iset.erase(1);
+	cout << "size=" << iset.size() << endl;//size=6
+	cout << "1 count=" << iset.count(1) << endl;//1 count=0
+
+	set<int>::iterator it;
+	for (it = iset.begin(); it != iset.end(); ++it)
+		cout << *it << " "; //2 3 4 5 6 7
+	cout << endl;
+
+	it = find(iset.begin(), iset.end(), 3);
+	if (it != iset.end())
+		cout << "3 found" << endl;//3 found
+
+	it = find(iset.begin(), iset.end(), 1);
+	if (it == iset.end())
+		cout << "1 not found" << endl;//1 not found
+
+	system("pause");
+	return 0;
+}
+```
+
+### map
+
+1. map的特性是，所有元素都会根据元素的键值自动被排序。map的所有元素都是pair，同时拥有实值（value）和键值（key）。pair的第一元素被视为键值，第二元素被视为实值。map不允许两个元素拥有相同的键值。下面是`<stl_pair.h>`中pair定义：
+
+   ```c++
+   template<class T1,class T2>
+   struct pair{
+   	typedef T1 first_type;
+   	typedef T2 second_type;
+   	T1 first;
+   	T2 second;
+   	pair():first(T1()),second(T2()) {}
+   	pair(const T1& a,const T2& b):first(a),second(b) {}
+   }
+   ```
+
+    
+
+2. 不能通过map的迭代器改变map的键值，但通过map的迭代器能改变map的实值。因此map的iterators既不是一种const iterators，也不是一种mutable iterators。 
+
+3. map拥有和list相同的某些性质：当客户端对它进行元素新增操作（insert）或删除操作（erase）时，操作之前的所有迭代器，在操作完成之后都依然有效。当然，被删除的那个元素的迭代器必然是个例外。
+
+4. 由于RB-tree是一种平衡二叉搜索树，自动排序的效果很不错，所以标准的STL map即以RB-tree为底层机制。又由于map所开放的各种操作接口，RB-tree也都提供了，所以几乎所有的map操作行为，都只是转调用RB-tree的操作行为而已。
+
+```c++
+#include<map>
+#include<iostream>
+#include<string>
+using namespace std;
+
+int main()
+{
+	map<string, int> simap;            //以string为键值，以int为实值
+	simap[string("jjhou")] = 1;        //第一对内容是（"jjhou",1）
+	simap[string("jerry")] = 2;        //第一对内容是（"jerry",2）
+	simap[string("jason")] = 3;        //第一对内容是（"jason",3）
+	simap[string("jimmy")] = 4;        //第一对内容是（"jimmy",4）
+
+	pair<string, int> value(string("david"), 5);
+	simap.insert(value);
+
+	map<string, int>::iterator simap_iter = simap.begin();
+	for (; simap_iter != simap.end(); ++simap_iter)
+		cout << simap_iter->first << ' ' << simap_iter->second << endl;
+																//david 5   //按键值排序
+																//jason 3
+																//jerry 2
+																//jimmy 4
+																//jjhou 1
+
+	int number = simap[string("jjhou")];
+	cout << number << endl;                                     //1
+
+	map<string, int>::iterator ite1;
+
+	//面对关联式容器，应使用其所提供的find函数来搜寻元素，会比STL算法find(）更有效率。因为STL find()只是循序搜索
+	ite1 = simap.find(string("mchen"));
+	if (ite1 == simap.end())
+		cout << "mchen not found" << endl;                      //mchen not found
+
+	ite1 = simap.find(string("jerry"));
+	if (ite1 != simap.end())
+		cout << "jerry found" << endl;                         //jerry found
+
+	ite1->second = 9;
+	int number2 = simap[string("jerry")];
+	cout << number2 << endl;                                   //9
+}
+```
+
+### multiset
+
+multiset的特性以及用法和set完全相同，唯一的差别在于它允许键值重复，因此它的插入操作采用的是底层机制RB-tree的insert_equal()而非insert_unique()。
+
+```c++
+#include<set>
+#include<iostream>
+#include<vector>
+using namespace std;
+int main() {
+      vector<int> a = { 5, 3, 4, 1, 6, 2 };
+      multiset<int> iset(a.begin(),a.end());
+  
+      cout << "size=" << iset.size() << endl; //size=6
+      cout << "3 count=" << iset.count(3) << endl;//3 count=1
+  
+      iset.insert(3); //和set区别的地方
+      cout << "size=" << iset.size() << endl;//size=7
+      cout << "3 count=" << iset.count(3) << endl;//3 count=2
+  
+      iset.insert(7);
+      cout << "size=" << iset.size() << endl;//size=8
+      cout << "3 count=" << iset.count(3) << endl;//3 count=2
+  
+      iset.erase(1);
+      cout << "size=" << iset.size() << endl;//size=7
+      cout << "1 count=" << iset.count(1) << endl;//1 count=0
+  
+      set<int>::iterator it;
+      for (it = iset.begin(); it != iset.end(); ++it)
+          cout << *it << " "; //2 3 3 4 5 6 7
+      cout << endl;
+  
+      it = find(iset.begin(), iset.end(), 3);
+      if (it != iset.end())
+          cout << "3 found" << endl;//3 found
+  
+      it = find(iset.begin(), iset.end(), 1);
+      if (it == iset.end())
+          cout << "1 not found" << endl;//1 not found
+  
+      system("pause");
+      return 0;
+ }
+```
+
+### multimap
+
+multimap的特性以及用法与map完全相同，唯一的差别在于它允许键值重复，因此它的插入操作采用的是底层机制RB-tree的insert_equal()而非insert_unique()。
+
+```c++
+#include<map>
+#include<string>
+#include<iostream>
+using namespace std;
+
+int main(){
+	multimap<string, int> mp;//multimap没有下标操作
+	mp.insert(pair<string, int>("Jack", 1));
+	mp.insert(pair<string, int>("John", 2));
+	mp.insert(pair<string, int>("Lily", 3));
+	mp.insert(pair<string, int>("Kate", 4));//按键值字典序排序
+	mp.insert(pair<string, int>("Tom", 5));              //Jack 1
+	mp.insert(pair<string, int>("John", 8));            //John 2   
+	                                                    //John 8   
+	map<string, int>::iterator it;                      //Kate 4
+	for (it = mp.begin(); it != mp.end(); ++it)         //Lily 3
+		cout << it->first << " " << it->second << endl; //Tom 5
+
+	it = mp.find("John");
+	if (it != mp.end())
+		cout << "John found" << endl; //John found
+	it->second = 8;
+
+	it = mp.find("John");
+	cout << it->second << endl;//8
+
+	system("pause");
+	return 0;
+}
+```
+
