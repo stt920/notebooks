@@ -1067,7 +1067,10 @@ private:
  若要支持例如加法、乘法的算数运算符。例如，operator*写成Rational成员函数的写法：
 
 ```c++
-
+class Rational{  
+public:  
+	const Rational operator*(const Rational& rhs) const;
+}; 
 ```
 
 这个设计可以使得两个有理数轻松相乘：
@@ -1100,7 +1103,8 @@ oneHlaf是含有operator*函数的class的对象，所以编译器会调用该�
 这里发生隐式类型转换。编译器知道你正在传递一个int，而函数需要的是Rational；但它也知道只要调用Rational构造函数并赋予你提供的int，就可以变出一个适当的Rational来。此调用在编译器眼中就像：
 
 ```c++
-
+const Rational temp(2);
+result=onealf*tmp;
 ```
 
 当然，只因涉及non-explicit构造函数，编译器才会这样做，否则上述两据都无法编译通过。
@@ -1108,12 +1112,127 @@ oneHlaf是含有operator*函数的class的对象，所以编译器会调用该�
 让operator*成为一个non-member函数，便允许编译器在一个实参身上执行隐士类型转换：
 
 ```c++
+class Rational{                 //不包括operator*
+}；
+const Rational operator*(const Rational& lhs,const Rational& rhs){    //成为一个non-member函数
+    return  Rational(lhs.numerator()*rhs.numerator(),lhs.denominator()*rhs.denominator());
+}
 
+Rational oneRourth(1,4);
+Rational result;
+result=oneRourth*2;
+result=2*oneRourth;  //都没有问题
 ```
 
 请记住：
 
 - 如果你需要为某个函数的所有参数(包括this指针所指的那个隐喻参数)进行类型转换，那么这个函数为non-member。
 
+### 条款25：考虑写出一个不抛出异常的swap函数
 
+1. 如果swap的缺省实现码对你的class或class template提供了可接受的效率，你不需要额外做任何事。任何尝试置换那种对象的人都会取得缺省版本，而那将有良好的运作。 
 
+   ```c++
+   namespace std{  
+       template<typename T>  
+       void swap(T&a, T&b)        //std:swap的典型实现  
+       {                           //置换a和b的值  
+           T temp(a);  
+           a = b;  
+           b = temp;  
+       }  
+   }
+   ```
+
+2. 如果swap缺省实现版的效率不足，那几乎总是意味着class或class template使用了某种pimpl手法(pointer to implementation)，pimpl手法指“以指针指向一个对象，内含真正数据”那种类型的设计的表现形式。 
+
+   ```c++
+   class WidgetImpl{
+   public:
+   	...
+   private:
+   	int a, b, c;
+   	std::vector<double> v;
+   	...
+   };
+   class Widget{ //这个class使用pimpl手法
+   public:
+   	Widget(const Widget& rhs);
+   	Widget& operator=(const Widget&rhs)
+   	{
+   		...
+   		*pImv = *(rhs.pImpl);
+   		...
+   	}
+   	...
+   private:
+   	WidgetImpl* pImv; 
+   };
+   ```
+
+   一旦要置换两个Widget对象值，我们唯一要做的就是置换其pImv指针，但缺省的swap所发并不知道这一点。它不只复制三个Widget，还复制WidgetImpl对象，非常缺乏效率。
+
+   希望告诉std::swap:当Widgets被置换时真正该做的是置换其内部的pImpl指针。
+
+   尝试以下工作：
+
+   a. 提供一个public swap成员函数做真正的置换工作，然后将std::swap特化，令它调用该成员函数。 
+
+   ```c++
+   class Widget{  
+   public:  
+       ...  
+       void swap(Widget& other)  
+       {  
+           using std::swap;  
+           swap(pImpl, other.pImpl);  
+       }  
+       ...  
+   };  
+   namespace std{
+       template<>
+       void swap<Widget>(Widget&a,Widget&b)
+       {
+           a.swap(b);
+       }
+   }
+   ```
+
+   b. 在你的class或template所在的命名空间内内提供一个non-member swap，并令它调用上述swap成员函数。 
+
+   ```c++
+   namespace WidgetStuff{  
+       ...  
+       template<typename T>  
+       class Widget { ... }  
+       ...  
+       template<typename T>  
+       void swap(Widget<T>& a, Widget<T>& b)  
+       {  
+           a.swap(b);  
+       }  
+   }
+   ```
+
+   c. 如果正在编写的是一个class(而非class template),为你的class特化std::swap，并让它调用你的swap member函数。 
+
+   ```c++
+   namespace std{  
+       template<>  
+       void swap<Widget>(Widget& a, Widget& b)  
+       {  
+           a.swap(b);  
+       }  
+   }
+   ```
+
+   d. 最后，如果你调用swap,请确定包含一个using声明式，以便让std::swap在你的函数中曝光可见，然后不加任何namespace修饰符，赤裸裸地调用swap。 
+
+请记住：
+
+- 当std::swap对你的类型效率不高时，提供一个swap成员函数，并确定这个函数不抛出异常。
+- 如果你提供一个member swap，也该提供一个non-member swap用来调用前者。对于class（而非templates），也请特化std::swap。
+- 调用swap时应针对std::swap使用using声明式，然后调用swap并且不带任何“命名空间资格修饰”。
+- 为“用户定义类型”进行std templates全特化是好的，但千万不要尝试在std内加入某些对std而言全新的东西。   
+
+## 第五章 实现
