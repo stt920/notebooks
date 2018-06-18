@@ -1624,12 +1624,40 @@ value：节点的实值类别  key：节点的键值类别  HashFcn：hash funct
 <stl_hash_fun.h>定义有数个现成的hash functions，全都是仿函数。hash function是计算元素位置的函数，SGI将这项任务赋予bkt_num()，再由它来调用这里提供的hash function，取得一个可以对hashtable进行模运算的值。针对char，int，long等整数型别，这里大部分hash function什么也不做，只是返回原值。但对于字符字符串（const char*），就设计了一个转换函数如下：
 
 ```c++
-  inline size_t __stl_hash_string(const char* s)  
-  {  
-    unsigned long h = 0;   
-    for ( ; *s; ++s)  
-      h = 5*h + *s;  
-      
-    return size_t(h);  
-  } 
+inline size_t __stl_hash_string(const char* s)  
+{  
+  unsigned long h = 0;   
+  for( ; *s; ++s)  
+  h = 5*h + *s;     
+  return size_t(h);  
+} 
 ```
+
+### hash_set
+
+1. hash_set以hashtable为底层实现机制。由于hash_set所供应的操作接口，hashtable都提供了，所以几乎所有的hash_set操作行为，都只是转调用hashtable的操作而已。
+2. 运用set目的是能够快速搜寻元素，这一点，不论底层是RB-tree或是hashtable都可以达成任务。但是，RB-tree有自动排序功能而hashtable没有，反应出来的结果就是，set的元素有自动排序功能而hash_set没有。
+3. set的元素不像map那样可以同时拥有实值（value）和键值（key），set元素的键值就是实值，实值就是键值。这一点在hash_set中也是一样的。hash_set的使用方式，与set完全相同。
+
+### hash_map
+
+1. hash_map以hashtable为底层机制，由于hash_map所提供的操作接口，hashtable都提供了，所以几乎所有的hash_map操作行为，都只是调用hashtable的操作行为而已。
+2. 运用map为的是根据键值快速搜寻元素，这一点底层不论是RB-tree或者是hashtable，都可以达到任务。但是，RB-tree有自动排序功能而hashtable没有，反应出来的结果就是，map的元素有自动排序的功能而has_map没有。
+3. map的特性是，每一个元素同时拥有一个实值和一个键值，这一点在hash_map中也是一样的。hash_map的使用方式和map完全相同。
+
+### hash_multiset
+
+hash_multiset的特性与multiset完全相同，唯一的差别在于它的底层机制是hashtable。也因此，hash_multiset的元素并不会被自动排序。
+
+hash_multiset和hash_set实现上唯一的差别在于，前者的元素插入操作采用底层机制hashtable的insert_equal()，后者则采用insert_unique()。
+
+### hash_multimap
+
+hash_multimap的特性与multimap完全相同、唯一的差别在于它的底层机制是hashtable。也因此，hash_multimap的元素并不会被自动排序。
+
+hash_multimap和hash_map实现上的唯一差别在于，前者的元素插入操作采用底层机制hashtable的insert_equal()，后者则采用insert_unique()。
+
+
+
+
+
