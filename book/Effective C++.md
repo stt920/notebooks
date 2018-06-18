@@ -973,3 +973,147 @@ const Rational& operator*(const Rational& lhs, const Rational& rhs){
 
 ### 条款22：将成员变量声明为private
 
+1. 如果成员变量不是public，客户唯一能够访问对象的办法就是通过成员函数。如果public接口内的每样东西都是函数，客户就不需要再打算访问class成员时迷惑地试着记住是否该使用小括号。 
+
+2. 使用函数可以让你对成员变量的处理有更精确的控制。如果你令成员变量为public，每个人都可以读写它，但如果你以函数取得或设定其值，你就可以出现“不准访问”、“只读访问”以及“读写访问”。 
+
+   ```c++
+   class AccessLevels{
+   public:
+       ...
+       int getReadOnly() const {return readOnly;}
+       void setReadWrite(int value) {readWrite=value;}
+       int getReadWrite() const {return readWrite；}
+       void setWriteOnly(int value) {writeOnly=value;}
+   private:
+       int noAccess;       //对此int无任何访问操作
+       int readOnly;       //对此int做只读访问
+       int readWrite;      //对此int做读写访问
+       int writeOnly;      //对此int做惟写访问
+   }；
+   ```
+
+3. 将成员变量隐藏在函数接口的背后，可以为“所有可能的实现”提供弹性。例如这可使得成员变量被读或写时轻松通知其它对象、可以验证calss的约束条件以及函数的前提和事后状态、可以在多线程环境中执行同步控制......等等 。
+
+4. 从封装的角度观之，其实只有两种访问权限：private（提供封装）和其他（不提供封装）。书中以public或protected成员变量被取消而需要修改大量代码为例，来说明public和protected不具有封装性。
+
+请记住：
+
+- 切记将成员变量声明为private。这可赋予客户访问数据的一致性、可细微划分访问控制、允许约束条件获得保护，并提供class作者以充分的实现弹性。
+- protected并不比public更具封装性。
+
+### 条款23：宁以non-member、non-friend替换member函数
+
+1. 面向对象守则要求，数据以及操作数据的那些函数应该被捆绑在一起，这意味着它建议member函数是较好的选择。这个建议并不正确，这是基于面向对象真实意义的一个误解。面向对象守则要求数据应该尽可能被封装，与直观相反，member函数带来的封装性比non-member函数低。
+
+   member函数与non-member函数示例： 
+
+   ```c++
+   //功能：web浏览器清除下载元素高速缓存区、清除访问过的url、以及移除系统中所有cookies
+   class WebBrower{
+   public:
+       ...
+       void clearCache();
+       void clearHistory();
+       void removeCookies();
+       ...
+   };
+   //执行所有这些动作，member函数
+   class WebBrower{
+   public:
+       ...
+       void clearEverything();
+       ...
+   };
+   //non-member函数
+   void clearBrowser(WebBrower& wb)
+   {
+       wb.clearCache();
+       wb.clearHistory();
+       wb.removeCookies();
+   }
+   ```
+
+2. 如果在一个member函数（它不仅可以访问class内private数据，也可以取用private函数、enums、typedefs等等）和一个non-membernon-friend函数（它无法访问上述任何东西）之间做抉择，而且两者提供相同机能，那么，导致较大封装性的是non-member non-friend函数，因为它并不增加“能够访问class内之private成分”的函数数量。 这就解释了为什么clearBrowser比较clearEverything更受欢迎的原因：它导致WebBrowser class有更大的封装性。
+
+3. 将所有便利函数放在多个头文件内但隶属同一个命名空间，意味客户可以轻松扩展这一组便利函数。需要做的就是添加更多non-member non-friend函数到此命名空间内。 
+
+   ```c++
+   naspace WebBrowserStuff{
+       class WebBrowser{...};
+       void clearBrowser{WebBrowser& wb};
+   }
+   ```
+
+请记住：
+
+- 宁可拿non-member non-friend函数替代member函数。这样做可以增加封装性、包裹弹性和机能扩充性。 
+
+### 条款24：若所欲参数皆需要类型转换，请为此采用non-member函数
+
+假设Rational class：
+
+```c++
+class Rational{  
+public:  
+    Rational(int numerator= 0, int denominator= 1);//构造函数刻意不为explicit，为了隐式类型转换  
+    int numerator() const; 
+    int denominator() const; 
+private:  
+    ...
+}; 
+```
+
+ 若要支持例如加法、乘法的算数运算符。例如，operator*写成Rational成员函数的写法：
+
+```c++
+
+```
+
+这个设计可以使得两个有理数轻松相乘：
+
+```c++
+Rational oneEighth(1, 8);  
+Rational oneHalf(1, 2);  
+Rational result = oneHalf*oneEighth;  //正确
+result=result*oneEighth//正确
+```
+
+但是执行混合运算，却只有一半行得通：
+
+```c++
+result=oneHalf*2;//正确
+result=2*oneHalf;//错误!
+```
+
+重写上述两式：
+
+```c++
+result=oneHalf.operator(2);//正确
+result=2.operator(oneHalf);//错误!
+```
+
+oneHlaf是含有operator*函数的class的对象，所以编译器会调用该函数。而整数2并没有相应的class。
+
+为什么先前那个调用可以成功。注意其第二个参数是整数2，但Rational::operator*需要的实参却是个Rational对象。what happened？
+
+这里发生隐式类型转换。编译器知道你正在传递一个int，而函数需要的是Rational；但它也知道只要调用Rational构造函数并赋予你提供的int，就可以变出一个适当的Rational来。此调用在编译器眼中就像：
+
+```c++
+
+```
+
+当然，只因涉及non-explicit构造函数，编译器才会这样做，否则上述两据都无法编译通过。
+
+让operator*成为一个non-member函数，便允许编译器在一个实参身上执行隐士类型转换：
+
+```c++
+
+```
+
+请记住：
+
+- 如果你需要为某个函数的所有参数(包括this指针所指的那个隐喻参数)进行类型转换，那么这个函数为non-member。
+
+
+
