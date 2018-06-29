@@ -1236,3 +1236,294 @@ result=2*oneRourth;  //都没有问题
 - 为“用户定义类型”进行std templates全特化是好的，但千万不要尝试在std内加入某些对std而言全新的东西。   
 
 ## 第五章 实现
+
+### 条款26：尽可能延后变量定义式的出现时间
+
+1. 只要你定义了一个变量而其类型带有一个**构造函数或析构函数**，那么当程序的控制流到达这个变量定义式时，你便得承受构造成本；当这个变量离开其作用域时，你便得承受析构成本。即使这个变量最终并为被使用，仍需耗费这些成本，所以应该尽量避免这种情形。 
+
+   考虑下面这个函数，它计算同学密码的加密版本后而返回，前提是密码够长。如果密码短，函数会丢出一个异常，类型为logic_error:
+
+   ```c++
+   //改函数过早定义encrypted
+   std::string encryptPassword(const std::string& password){
+   	using namespace std;
+   	string encrypted;
+   	if (password.length() < MinimumPasswordLength){
+   		throw logic_error("Password is too short");    
+   	}
+   	...
+   	return encrypted;
+   }
+   ```
+
+   如果有个异常被丢出，对象encrypted就没有被使用，但仍得付出encrypted的构造成本和析构成本。所以最好延后encrypted的定义式，直到确实需要它。 
+
+   ```c++
+   //延后encryted的定义，知道真正需要他
+   std::string encryptPassword(const std::string& password){  
+       using namespace std;  
+       if (password.length() < MinimumPasswordLength){  
+           throw logic_error("Password is too short");      
+       }  
+       string encrypted;  
+       ...  
+       return encrypted;  
+   }  
+   ```
+
+   “通过默认构造函数构造出一个对象然后对它赋值”比“直接在构造函数时制定初值”效率差。 
+
+2. “尽可能延后”的真正意义是：你不只应该延后变量的定义，直到非得使用该变量的前一刻为止，甚至应该尝试延后这份定义直到能够给它初值实参为止。这样不仅能够避免构造和析构非必要对象，还可以避免无意义的default构造函数。 
+
+3. 对于循环
+
+   ```c++
+   //方法A:定义循环外
+   Widget w;
+   for (int i = 0; i < n; ++i){
+   	w = 取决于i的某个值;
+   	...
+   }     //1个构造函数+1个析构函数+n个赋值操作；
+   //方法B：定义循环内
+   for (int i = 0; i < n; ++i)
+   {
+   	Widget w(取决于i的某个值);
+   	...
+   }     //n个构造函数+n个析构函数
+   ```
+
+   以上两周写法的成本：
+
+   - 做法A:1个构造函数+1个析构函数+n个赋值操作
+   - 做法B:n个构造函数+n个析构函数
+
+   如果classes的一个赋值成本低于一组构造+析构成本，做法A大体而言比较高效。尤其当n值很大的时候，否则做法B或许较好。此外做法A造成名称w的作用于比B大，有时对程序的可理解性和易维护性造成冲突。除非(1)你知道赋值成本比“构造+析构”成本低，(2)你正在处理代码效率高度敏感的部分，否则应该使用做法B。
+
+请记住：
+
+- 尽可能延后变量定义式的出现。这样做可增加程序的清晰度并改善程序效率。
+
+### 条款27 ：尽量少做转型动作
+
+转型（casts）破坏了类型系统。那可能导致任何种类的麻烦，有些容易辨识，有些非常隐晦。 
+
+C++还提供四种新式转型：
+
+- const_cast通常被用来将对象的常量性转除。它也是唯一有此能力的C++-style转型操作符。
+- dynamic_cast主要用来执行“安全向下转型”，也就是用来决定某对象是否归属继承体系中的某个类型。它是唯一无法由旧式语法执行的动作，也是唯一可能消耗重大运行成本的转型动作。
+- reinterpret_cast意图执行低级转型，实际动作（及结果）可能取决于编译器，也就表示不可移植。例如将一个pointer to int转型为一个int。
+- static_cast用来强迫隐式转换，例如将non-const对象转为const对象，或将int对象转换为double等等。
+
+任何一个类型转换往往真的令编译器编译出运行期间执行的码，例如将int型转换为double型几乎肯定会产生一些代码，因为在大部分计算机体系结构中，int的底层表述几乎不同于double的底层表述。但看下面的例子：
+
+```c++
+class Base{ ... };  
+class Derived :public Base{ ... };  
+Derived d;  
+Base* pb = &d; 
+```
+
+上述例子建立一个base class指针指向一个derived class对象，但有时候上述两个指针值并不相同。这种情况下会有个偏移量在运行期被施行与`Derived* ` 指针身上，用以取得正确的`Base* ` 指针值。 
+
+ 例子：很多应用框架中都要求derived classes内的virtual函数代码第一个动作就是先调用base class对于函数。假设有一个Window base class和一个SpecialWindow derived class，两者都定义了virtual函数onResize。进一步假设SpecialWindow的onResize函数被要求调用Window的onResize。下面实现方式之一看起来正确，实际错误。
+
+```c++
+class Window{
+public:
+    virtual void onResize() {...}
+    ...
+};
+class SpecialWindow:public Window{
+public:
+    virtual void onResize(){
+        static_cast<Window>(*this).onResize();//错误
+        ...
+    }
+    ...
+};
+```
+
+这段程序将*this转型为Window，对函数onResize的调用也因此调用了Window::onResize。但令人想不到的是，它调用的并不是当前对象上的函数，而是稍早转型动作所建立的一个“ this指针对象的bass class成分“的暂时副本身上的onResize。
+
+之所以需要dynamic_cast，通常是因为你想在一个认定为derived class对象身上执行derived class操作函数，但你却只有一个“指向base”的pointer或reference。 
+
+请记住：
+
+- 如果可以，尽量避免转型，特别是在注重效率的代码中避免dynamic_casts。如果有个设计需要转型动作，试着发展无需转型的替代设计。
+- 如果转型是必要的，试着将它隐藏于某个函数背后。客户随后可以调用该函数，而不需要将转型放进他们自己的代码内。
+- 宁可使用C++-style（新式）转型，不要使用旧式转型。前者很容易辨识出来，而且也比较有着分们别类的职掌。
+
+### 条款28：避免返回handles指向对象内部成分 
+
+1.例子：
+
+```c++
+#include<iostream>  
+#include<memory>  
+using namespace std;  
+  
+class Point{ //用来描述“点”  
+public:  
+    Point(int xVal, int yVal) :x(xVal), y(yVal){}  
+    void setX(int newVal){ x = newVal; }  
+    void setY(int newVal){ y = newVal; }  
+    int getX()const{ return x; }  
+    int getY()const{ return y; }  
+private:  
+    int x;  
+    int y;  
+};  
+struct RectData{ //用来描述“矩形”  
+    RectData(const Point& p1, const Point& p2) :ulhc(p1), lrhc(p2){}  
+    Point ulhc;//坐上  
+    Point lrhc;//右下  
+};  
+class Rectangle{  //矩形类  
+public:  
+    Rectangle(RectData data) :pData(new RectData(data)){}  
+    Point& upperLeft()const{ return pData->ulhc; }  
+    Point& lowerRight()const{ return pData->lrhc; }  
+private:  
+    shared_ptr<RectData> pData;  
+};  
+  
+int main(){  
+    Point coord1(0, 0);  
+    Point coord2(100, 100);  
+    RectData data(coord1, coord2);  
+    const Rectangle rec(data);  
+    rec.upperLeft().setX(50);  
+    cout << rec.upperLeft().getX() << " " << rec.upperLeft().getY() << endl;//左上角坐标从(0,0)变为了(50,0)  
+  
+    system("pause");  
+    return 0;  
+}  
+```
+
+ 上述例子中upperLeft的调用者能够使用被返回的reference（指向rec内部的Point成员变量）来更改成员，但rec应该是不可变的（const）。我们可以得到以下两个结论：
+
+a、变量的封装性最多等于“返回其引用”的函数的访问级别。
+
+b、如果const成员函数传出一个reference，后者所指数据与对象自身有关联，而它又被储存于对象之外，那么这个函数的调用者可以修改那笔数据。
+
+2、对象的引用、指针、迭代器都是所谓的handles，而返回一个“代表对象内部数据”的handle，会降低对象的封装性。在上述例子中，只要在upperLeft和lowerRight函数的返回类型加上const即可： 
+
+```c++
+const Point& upperLeft()const{ return pData->ulhc; }  
+const Point& lowerRight()const{ return pData->lrhc; }  
+```
+
+即便如此，upperLeft和lowerRight函数还是返回了代表对象内部的handles，有可能在其他场合带来问题，如它可能导致dangling handles，即这种handles所指东西不复存在。 
+
+请记住:
+
+- 避免返回handles(包括引用，指针，迭代器)指向内部对象。遵守这个条款可增加封装性，帮助const成员函数的行为像个const，并将发生“虚吊号码牌”(dangling handles)的可能性降至最低。
+
+转自：https://blog.csdn.net/ruan875417/article/details/47281885
+
+### 条款29：为“异常安全”而努力是值得的
+
+当异常抛出时，带有异常安全的函数会：
+
+- 不泄露任何资源（条款13：资源管理类）
+- 不允许数据败坏
+
+异常安全函数提供以下三个保证之一：
+
+- 基本承诺：如果异常被抛出，程序内的任何事物仍然保持在有效状态下。没有任何对象或数据结构会因此而败坏，所有对象都处于一种内部前后一致的状态。然而程序的现实状态不可预料。 
+- 强烈保证：如果异常被抛出，程序状态不改变。 
+- 不抛掷保证：承诺绝不抛出异常，因为他们总能完成它们原先承诺的功能。 
+
+copy and swap会导致强烈保证。原则是为你打算修改的对象（原件）做出一份副本，然后在那副本身上做一切必要修改。若有任何修改动作抛出异常，原对象仍保持未改变状态。待所有改变都成功后，再将修改过的那个副本和原对象在一个不抛出异常的操作中置换（swap）。 
+
+请记住：
+
+- 异常安全函数（Exception-safefunctions）即使发生异常也不会泄漏资源或允许任何数据结构败坏。这样的函数区分为三种可能的保证：基本型、强烈型、不抛异常型。
+- “强烈保证”往往能够以copy-and-swap实现出来，但“强烈保证”并非对所有函数都可实现或具备现实意义。
+- 函数提供的“异常安全保证”通常最高只等于其所调用之各个函数的“异常安全保证”中的最弱者。
+
+### 条款30：彻透了解inlining的里里外外
+
+1. inline函数，看起来像函数，比宏好得多，可以调用它们又不需蒙受函数调用所招致的额外开销。
+
+2. inline函数背后整体的整体观念是，将“对此函数的每一个调用”都以函数本体替换之。这样做可能增加目标码的大小。在一台内存有限的的机器上，过度热衷inlining会造成程序体积太大，即使有虚拟内存，inline造成的代码膨胀也会导致额外换页行为，降低指令高速缓存装置的击中率，以及伴随这些而来的效率损失。
+
+3. inline只是对编译器的一个申请，不是强制指令。这项申请可以隐喻提出，也可以明确提出。隐喻方式是将函数定义于class定义式内： 
+
+   ```c++
+   class Person{
+   public:
+   	...
+   	int age() const { return theAge; } //隐喻申请
+   	...
+   private:
+   	int theAge
+   };
+   ```
+
+   这样的函数通常是成员函数，friend函数也可被定义于class内，如果真是那样，它们也是被隐喻声明为inline。
+
+   明确声明inline函数的做法则是在其定义式钱加上关键字inline。例如标准的max template：
+
+   ```c++
+   template<typename T>
+   inline const T& std::max(const T& a, const T& b){
+   	return a < b ? b : a;
+   }
+   ```
+
+4. 大部分编译器拒绝将过于复杂（例如带有循环或递归）的函数inlining，而所有对虚函数的调用也都会使inlining落空。因为虚函数直到运行期才确定调用哪个函数，而内联函数意味执行前先将调用动作替换为被调用函数的本体。 
+
+5. 一个表面上看似inline的函数是否真是inline，取决于你的建置环境，主要取决于编译器。编译器通常不对“通过函数指针而进行的调用”实施inlining。 
+
+6. 构造函数和析构函数往往是inlining的糟糕候选人。（由编译器于编译期代为产生并安插在程序中的代码，可能存在于构造函数和析构函数中）。
+
+7. 程序库设计者必须评估“将函数声明为inline”的冲击：inline函数无法随着程序库的升级而升级。例如f是程序库内的一个inline函数，客户将“f函数本体”编进其程序中，一旦程序库设计者决定改变f，所有用到f的客户端程序必须重新编译。但如果f是non-inline函数，客户端只需重新连接即可；如果是动态链接库，升级版函数甚至可以不知不觉地被应用程序吸纳。 
+
+8. 大部分调试器面对inline函数都束手无策，因为你不能在一个不存在的函数内设立断点。 
+
+请记住：
+
+- 将大多数inlining限制在小型、被频繁调用的函数身上。这可使日后的调试过程和二进制升级(binary upgradability)更容易，也可使潜在的代码膨胀问题最小化，使程序的速度提升机会最大化。
+- 不要只因为function templates出现在头文件，就将它们声明为inline。
+
+### 条款31：将文件的编译依存关系降至最低
+
+如果没有取得其实现代码所用到的class string，Date和Address的定义式，那么class Person无法通过编译。 
+
+```c++
+class Person{
+public:
+	Person(const std::string& name, const Date& birthday,
+		const Address& addr);
+	std::string name() const;
+	std::string birthday() const;
+	std::string address() const;
+	...
+private:
+	std::string theName; //实现细节
+	Date theBirthday;    //实现细节
+	Address theAddress;  //实现细节
+};
+
+```
+
+所以Person定义文件的最上方可能存在： 
+
+```c++
+#include<string>
+#include"date.h"
+#include"address.h"
+```
+
+ 这么一来使得Person定义文件和其含入文件之间形成了一种编译依赖关系。如果这些头文件中有任何一个被改变，或者这些头文件依赖的其他头文件有任何改变，那么每一个含入Person class的文件就得重新编译，任何使用Person class的文件也必须重新编译。 
+
+Handle classes可以解除接口和实现之间的耦合关系，从而降低文件间的编译依存性。 
+
+解除接口和实现之间的耦合关系，从而降低文件间的编译依存性的方法还有Interface classes。 
+
+请记住：
+
+- 支持“编译依存性最小化”的一般构想是：相依于声明式，不要相依于定义式。基于此构想的两个手段是Handle classed和Interface classes。
+- 程序库头文件应该以“完全且仅有声明式”（full and declaration-only forms）的形式存在。这种做法不论是否涉及templates都适用。 
+
