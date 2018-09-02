@@ -284,7 +284,7 @@ CREATE VIEW productcustomers AS SELECT cust_name,cust_contact,prod_id FROM custo
 ```mysql
 select a, b, c
 from A inner join B
-on A.key = B.keymysql
+on A.key = B.key
 ```
 
 可以不明确使用 INNER JOIN，而使用普通查询并在 WHERE 中将两个表中要连接的列用等值方法连接起来。
