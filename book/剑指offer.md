@@ -1482,7 +1482,7 @@ void Mirror(TreeNode *pRoot) {
 
 > 题目一（从上到下打印二叉树）：从上往下打印出二叉树的每个节点，同层节点从左至右打印。
 
-```
+```c++
 vector<int> PrintFromTopToBottom(TreeNode* root) {
         vector<int> vec;
         if(root==nullptr) 
@@ -1562,31 +1562,84 @@ vector<vector<int> > Print(TreeNode* pRoot) {
     }
 ```
 
-	bool VerifySquenceOfBST(vector<int> sequence) {
-	    int size=sequence.size();
-	    if(size==0) 
-	        return false;
-	    int root=sequence[size-1];
-	    int i=0;
-	    vector<int> seq_left;
-	    for(;i<size-1;i++)
-	    {
-	        if(root<sequence[i])
-	            break;
-	        seq_left.push_back(sequence[i]);         
-	    }
-	    int j=i;
-	    vector<int> seq_right;
-	    for(;j<size-1;j++)
-	    {
-	        if(root>sequence[j])
-	            return false;
-	        seq_right.push_back(sequence[j]);
-	    }
-	    bool left=true,right=true;
-	    if(i>0)
-	        left=VerifySquenceOfBST(seq_left);
-	    if(i<size-1)
-	        right=VerifySquenceOfBST(seq_right);
-	    return left&&right；        
+```c++
+bool VerifySquenceOfBST(vector<int> sequence) {
+    int size=sequence.size();
+    if(size==0) 
+        return false;
+    int root=sequence[size-1];
+    int i=0;
+    vector<int> seq_left;
+    for(;i<size-1;i++)
+    {
+        if(root<sequence[i])
+            break;
+        seq_left.push_back(sequence[i]);         
+    }
+    int j=i;
+    vector<int> seq_right;
+    for(;j<size-1;j++)
+    {
+        if(root>sequence[j])
+            return false;
+        seq_right.push_back(sequence[j]);
+    }
+    bool left=true,right=true;
+    if(i>0)
+        left=VerifySquenceOfBST(seq_left);
+    if(i<size-1)
+        right=VerifySquenceOfBST(seq_right);
+    return left&&right；        
+}
+```
+## 33：二叉树的后序遍历序列
+
+> 题目：输入一个整数数组，判断该数组是不是某二叉搜索树的后序遍历的结果。如果是则输出Yes,否则输出No。假设输入的数组的任意两个数字都互不相同。 
+
+```c++
+bool VerifySquenceOfBST(vector<int> A) {
+	if (A.size() == 0)
+		return false;
+    int size = A.size();
+	vector<int> vec1, vec2;
+	int i = 0;
+	int mdata = A[size - 1];
+	for (i; i<size-1; i++) {
+		if (A[i]>mdata) {
+			break;
+		}
+		vec1.push_back(A[i]);
 	}
+	int j=i;
+	for (j; j<size - 1; j++) {
+		vec2.push_back(A[j]);
+		if (A[j]<mdata) {
+			return 0;
+		}
+	}
+	bool left = 1;
+	if(i>0)
+	left = VerifySquenceOfBST(vec1);
+	bool right = 1;
+	if(i<size-1)
+	right = VerifySquenceOfBST(vec2);
+	return left&&right;
+}
+```
+
+## 34：二叉树中和为某一值的路径
+
+> 题目：输入一颗二叉树的跟节点和一个整数，打印出二叉树中结点值的和为输入整数的所有路径。路径定义为从树的根结点开始往下一直到叶结点所经过的结点形成一条路径。(注意: 在返回值的list中，数组长度大的数组靠前) 
+
+```c++
+
+```
+
+## 35：复杂链表复制
+
+> 题目：输入一个复杂链表（每个节点中有节点值，以及两个指针，一个指向下一个节点，另一个特殊指针指向任意一个节点），返回结果为复制后复杂链表的head。（注意，输出结果中请不要返回参数中的节点引用，否则判题程序会直接返回空） 
+
+```c++
+
+```
+
