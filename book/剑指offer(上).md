@@ -1632,7 +1632,22 @@ bool VerifySquenceOfBST(vector<int> A) {
 > 题目：输入一颗二叉树的跟节点和一个整数，打印出二叉树中结点值的和为输入整数的所有路径。路径定义为从树的根结点开始往下一直到叶结点所经过的结点形成一条路径。(注意: 在返回值的list中，数组长度大的数组靠前) 
 
 ```c++
+    vector<vector<int> > vec;
+    vector<int> tmp;
+    vector<vector<int> > FindPath(TreeNode* root,int expectNumber) {
+        if(root==NULL)
+            return vec;
+        tmp.push_back(root->val);
+        if((expectNumber-root->val)==0&&root->left==NULL&&root->right==NULL){
+            vec.push_back(tmp);
+        }
+       FindPath(root->left,expectNumber-root->val);
+	   FindPath(root->right,expectNumber-root->val);
+       if(tmp.size()!=0)
+           tmp.pop_back();
+        return vec;
 
+    }
 ```
 
 ## 35：复杂链表复制
@@ -1640,6 +1655,66 @@ bool VerifySquenceOfBST(vector<int> A) {
 > 题目：输入一个复杂链表（每个节点中有节点值，以及两个指针，一个指向下一个节点，另一个特殊指针指向任意一个节点），返回结果为复制后复杂链表的head。（注意，输出结果中请不要返回参数中的节点引用，否则判题程序会直接返回空） 
 
 ```c++
+//两个指针，一个指向next，另一个指向random
+	RandomListNode *copyRandomList(RandomListNode *pHead) {
+        if(pHead==NULL) return NULL;
+       	    RandomListNode* currNode=pHead;
+        //复制链表，只复制next，不复制random
+        while(currNode!=NULL)
+        {
+		   RandomListNode* node=new RandomListNode(currNode->label);
+            node->next=currNode->next;
+            currNode->next=node;
+            currNode=node->next;
+        }
+        //复制random
+        currNode=pHead;
+        while(currNode!=NULL)
+        {
+            RandomListNode* node=currNode->next;
+            if(currNode->random!=NULL)
+                node->random=currNode->random->next;
+            currNode=node->next;
+        }
+        //断开链表
+        RandomListNode *pClonHead=pHead->next;
+        RandomListNode *tmp=pClonHead;
+        while(tmp->next!=NULL)
+        {
+            tmp->next=tmp->next->next;
+            tmp=tmp->next;
+        }
+  
+        return pClonHead;
+    }
+```
 
+## 36：二叉搜索树与双向链表
+
+> 题目：输入一棵二叉搜索树，将该二叉搜索树转换成一个排序的双向链表。要求不能创建任何新的结点，只能调整树中结点指针的指向。 
+
+```c++
+TreeNode* Convert(TreeNode* pRootOfTree)
+    {
+        if(pRootOfTree==NULL)
+            return NULL;
+        if(pRootOfTree->left==NULL&&pRootOfTree->right==NULL)
+            return pRootOfTree;
+        TreeNode* left=Convert(pRootOfTree->left);
+        TreeNode* p=left;
+        while(p!=NULL&&p->right!=NULL)
+            p=p->right;
+        if(left!=NULL){
+           p->right=pRootOfTree;
+            pRootOfTree->left=p;
+        }
+        TreeNode* right=Convert(pRootOfTree->right);
+        if(right!=NULL){
+            right->left=pRootOfTree;
+            pRootOfTree->right=right;
+        }
+        return left!=NULL?left:pRootOfTree;
+  
+    }
 ```
 
